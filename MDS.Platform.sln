@@ -1,0 +1,78 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MDS.SharedKernel", "src\MDS.SharedKernel\MDS.SharedKernel.csproj", "{3D972F1C-8A01-4B08-8BB2-1A7E49372201}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MDS.Studio.Domain", "src\MDS.Studio.Domain\MDS.Studio.Domain.csproj", "{3D972F1C-8A01-4B08-8BB2-1A7E49372202}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MDS.Studio.Application", "src\MDS.Studio.Application\MDS.Studio.Application.csproj", "{3D972F1C-8A01-4B08-8BB2-1A7E49372203}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MDS.Studio.Infrastructure", "src\MDS.Studio.Infrastructure\MDS.Studio.Infrastructure.csproj", "{3D972F1C-8A01-4B08-8BB2-1A7E49372204}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MDS.Studio.Api", "src\MDS.Studio.Api\MDS.Studio.Api.csproj", "{3D972F1C-8A01-4B08-8BB2-1A7E49372205}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MDS.Studio.Desktop", "src\MDS.Studio.Desktop\MDS.Studio.Desktop.csproj", "{3D972F1C-8A01-4B08-8BB2-1A7E49372206}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MDS.LocalAgent", "src\MDS.LocalAgent\MDS.LocalAgent.csproj", "{3D972F1C-8A01-4B08-8BB2-1A7E49372207}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MDS.Studio.Domain.Tests", "tests\MDS.Studio.Domain.Tests\MDS.Studio.Domain.Tests.csproj", "{3D972F1C-8A01-4B08-8BB2-1A7E49372208}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MDS.Studio.Application.Tests", "tests\MDS.Studio.Application.Tests\MDS.Studio.Application.Tests.csproj", "{3D972F1C-8A01-4B08-8BB2-1A7E49372209}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MDS.Studio.IntegrationTests", "tests\MDS.Studio.IntegrationTests\MDS.Studio.IntegrationTests.csproj", "{3D972F1C-8A01-4B08-8BB2-1A7E49372210}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MDS.LocalAgent.Tests", "tests\MDS.LocalAgent.Tests\MDS.LocalAgent.Tests.csproj", "{3D972F1C-8A01-4B08-8BB2-1A7E49372211}"
+EndProject
+Global
+ GlobalSection(SolutionConfigurationPlatforms) = preSolution
+  Debug|Any CPU = Debug|Any CPU
+  Release|Any CPU = Release|Any CPU
+ EndGlobalSection
+ GlobalSection(ProjectConfigurationPlatforms) = postSolution
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372201}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372201}.Debug|Any CPU.Build.0 = Debug|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372202}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372202}.Debug|Any CPU.Build.0 = Debug|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372203}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372203}.Debug|Any CPU.Build.0 = Debug|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372204}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372204}.Debug|Any CPU.Build.0 = Debug|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372205}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372205}.Debug|Any CPU.Build.0 = Debug|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372206}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372206}.Debug|Any CPU.Build.0 = Debug|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372207}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372207}.Debug|Any CPU.Build.0 = Debug|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372208}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372208}.Debug|Any CPU.Build.0 = Debug|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372209}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372209}.Debug|Any CPU.Build.0 = Debug|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372210}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372210}.Debug|Any CPU.Build.0 = Debug|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372211}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372211}.Debug|Any CPU.Build.0 = Debug|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372201}.Release|Any CPU.ActiveCfg = Release|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372201}.Release|Any CPU.Build.0 = Release|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372202}.Release|Any CPU.ActiveCfg = Release|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372202}.Release|Any CPU.Build.0 = Release|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372203}.Release|Any CPU.ActiveCfg = Release|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372203}.Release|Any CPU.Build.0 = Release|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372204}.Release|Any CPU.ActiveCfg = Release|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372204}.Release|Any CPU.Build.0 = Release|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372205}.Release|Any CPU.ActiveCfg = Release|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372205}.Release|Any CPU.Build.0 = Release|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372206}.Release|Any CPU.ActiveCfg = Release|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372206}.Release|Any CPU.Build.0 = Release|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372207}.Release|Any CPU.ActiveCfg = Release|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372207}.Release|Any CPU.Build.0 = Release|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372208}.Release|Any CPU.ActiveCfg = Release|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372208}.Release|Any CPU.Build.0 = Release|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372209}.Release|Any CPU.ActiveCfg = Release|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372209}.Release|Any CPU.Build.0 = Release|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372210}.Release|Any CPU.ActiveCfg = Release|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372210}.Release|Any CPU.Build.0 = Release|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372211}.Release|Any CPU.ActiveCfg = Release|Any CPU
+  {3D972F1C-8A01-4B08-8BB2-1A7E49372211}.Release|Any CPU.Build.0 = Release|Any CPU
+ EndGlobalSection
+EndGlobal

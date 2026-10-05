@@ -1,0 +1,1 @@
+<Project Sdk="Microsoft.NET.Sdk"><ItemGroup><ProjectReference Include="..\..\src\MDS.SharedKernel\MDS.SharedKernel.csproj" /><ProjectReference Include="..\..\src\MDS.Studio.Domain\MDS.Studio.Domain.csproj" /></ItemGroup></Project>

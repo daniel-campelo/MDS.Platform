@@ -1,0 +1,1 @@
+<Project Sdk="Microsoft.NET.Sdk"><ItemGroup><ProjectReference Include="..\..\src\MDS.Studio.Application\MDS.Studio.Application.csproj" /></ItemGroup></Project>
