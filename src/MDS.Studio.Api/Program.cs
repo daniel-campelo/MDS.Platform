@@ -6,6 +6,7 @@ using MDS.Studio.Application;
 using MDS.Studio.Infrastructure;
 using MDS.Studio.Domain;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -17,7 +18,34 @@ builder.Services.AddSingleton<IClock, MDS.SharedKernel.SystemClock>();
 builder.Services.AddSingleton<IFileStorage>(_ => new LocalFileStorage(builder.Configuration["Storage:Root"] ?? "storage"));
 builder.Services.AddScoped<IInbox, EfInbox>();
 builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("postgresql");
-builder.Services.AddAuthentication("development").AddScheme<AuthenticationSchemeOptions, DevelopmentAuthHandler>("development", _ => { });
+
+var identityOptions = builder.Configuration.GetSection(SharedIdentityOptions.SectionName).Get<SharedIdentityOptions>() ?? new SharedIdentityOptions();
+if (identityOptions.Mode.Equals(SharedIdentityOptions.DevelopmentMode, StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddAuthentication(DevelopmentAuthHandler.SchemeName)
+        .AddScheme<AuthenticationSchemeOptions, DevelopmentAuthHandler>(DevelopmentAuthHandler.SchemeName, _ => { });
+}
+else if (identityOptions.Mode.Equals(SharedIdentityOptions.SharedJwtMode, StringComparison.OrdinalIgnoreCase))
+{
+    if (string.IsNullOrWhiteSpace(identityOptions.Authority) || string.IsNullOrWhiteSpace(identityOptions.Audience))
+    {
+        throw new InvalidOperationException(
+            "MDS-STUDIO-IDENTITY-001: Shared JWT authentication requires Authentication:Authority and Authentication:Audience.");
+    }
+
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
+        {
+            options.Authority = identityOptions.Authority;
+            options.Audience = identityOptions.Audience;
+            options.RequireHttpsMetadata = identityOptions.RequireHttpsMetadata;
+            options.TokenValidationParameters.NameClaimType = ClaimTypes.Name;
+        });
+}
+else
+{
+    throw new InvalidOperationException($"MDS-STUDIO-IDENTITY-001: Unsupported Authentication:Mode '{identityOptions.Mode}'.");
+}
 builder.Services.AddAuthorization(o =>
 {
     o.AddPolicy(Permissions.StudioAccess, p => p.RequireClaim("permission", Permissions.StudioAccess));
@@ -124,6 +152,17 @@ app.MapPost("/agents/{agentId:guid}/jobs/{jobId:guid}/complete", async (Guid age
 app.Run();
 
 public partial class Program { }
+public sealed class SharedIdentityOptions
+{
+    public const string SectionName = "Authentication";
+    public const string DevelopmentMode = "Development";
+    public const string SharedJwtMode = "SharedJwt";
+
+    public string Mode { get; init; } = SharedJwtMode;
+    public string? Authority { get; init; }
+    public string? Audience { get; init; }
+    public bool RequireHttpsMetadata { get; init; } = true;
+}
 public sealed class DatabaseHealthCheck(IServiceScopeFactory scopeFactory) : IHealthCheck
 {
  public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
@@ -134,6 +173,7 @@ public sealed class DatabaseHealthCheck(IServiceScopeFactory scopeFactory) : IHe
 }
 public sealed class DevelopmentAuthHandler(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder) : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
 {
+ public const string SchemeName = "development";
  protected override Task<AuthenticateResult> HandleAuthenticateAsync()
  {
   var claims = new[] { new Claim(ClaimTypes.NameIdentifier, Request.Headers["X-MDS-User"].FirstOrDefault() ?? "development-user"), new Claim(ClaimTypes.Name, "Development User"), new Claim("permission", Permissions.StudioAccess), new Claim("permission", Permissions.AdminDiagnostics), new Claim("permission", Permissions.AgentManage) };

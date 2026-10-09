@@ -11,7 +11,7 @@ This implementation establishes the Studio technical foundation only. MDS Core r
 - Development, Staging (homologação) and Production configuration overlays; Desktop visibly identifies homologação.
 - PostgreSQL EF Core foundation with versioned migrations for file assets, agents, jobs, outbox, inbox and audit events. The schema repair migrations are safe for the initial homologação database.
 - `GET /health`, `GET /version`, authenticated `GET /me`, and authorized diagnostics endpoint.
-- Development-only authentication foundation with the three M0 permission names. Replace it with the shared Identity provider before release; no production credential is present here.
+- Development-only authentication foundation with the three M0 permission names. The M1 [Shared Identity contract](SHARED-IDENTITY-CONTRACT.md) defines the production JWT boundary; no production credential is present here.
 - Local filesystem implementation of `IFileStorage`, SHA-256 metadata, path containment and archive support.
 - Correlation-ID middleware and structured logging scope.
 - Local Agent worker foundation with SQLite entities and sandbox-only test-file writer.
