@@ -1,6 +1,8 @@
 [CmdletBinding()]
 param(
-    [switch]$SkipBuild
+    [switch]$SkipBuild,
+    [switch]$UseCoreSession,
+    [string]$CoreApiUrl = 'http://192.168.7.14:8081/api'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -15,7 +17,10 @@ $environmentNames = @(
     'MDS_STUDIO_POSTGRES_PASSWORD',
     'ASPNETCORE_ENVIRONMENT',
     'ASPNETCORE_URLS',
-    'ConnectionStrings__Studio'
+    'ConnectionStrings__Studio',
+    'Authentication__Mode',
+    'Authentication__CoreBaseUrl',
+    'Authentication__RequireHttps'
 )
 $previousEnvironment = @{}
 foreach ($environmentName in $environmentNames) {
@@ -42,6 +47,15 @@ try {
     $env:ASPNETCORE_ENVIRONMENT = 'Staging'
     $env:ASPNETCORE_URLS = 'http://localhost:5000'
     $env:ConnectionStrings__Studio = "Host=localhost;Port=5433;Database=mds_studio;Username=mds_studio;Password=$databasePassword"
+    if ($UseCoreSession) {
+        $coreUri = $null
+        if (-not [Uri]::TryCreate($CoreApiUrl, [UriKind]::Absolute, [ref]$coreUri)) {
+            throw 'CoreApiUrl must be a valid absolute URL, for example http://192.168.7.14:8081/api.'
+        }
+        $env:Authentication__Mode = 'CoreSession'
+        $env:Authentication__CoreBaseUrl = $coreUri.AbsoluteUri.TrimEnd('/')
+        $env:Authentication__RequireHttps = ($coreUri.Scheme -eq 'https').ToString().ToLowerInvariant()
+    }
 
     Push-Location $repositoryRoot
     try {
