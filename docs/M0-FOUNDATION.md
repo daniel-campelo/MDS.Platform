@@ -51,6 +51,8 @@ On 2026-10-03, the station completed the M0 operational proof:
 
 This proves the bounded M0 route: API → PostgreSQL/outbox → Local Agent/SQLite → API inbox/completion.
 
-## Next incremental item
+## Operational handoff
 
-The repeatable station startup procedure is documented in [WORKSTATION-STARTUP.md](WORKSTATION-STARTUP.md). The M0 technical foundation and its bounded job contract are complete. Next, review the M0 acceptance checklist and version the initial baseline; do not begin Pattern, Graphics, Smart Size, product, customer, or production work during M0.
+The repeatable station startup procedure is documented in [WORKSTATION-STARTUP.md](WORKSTATION-STARTUP.md). The workstation also includes `scripts/Start-Staging.ps1`, `scripts/Test-Staging.ps1`, and `scripts/Stop-Staging.ps1` to start, verify and stop the bounded Staging stack without exposing the database password or deleting the database volume.
+
+The M0 technical foundation and its bounded job contract are complete. Next, review the M0 acceptance checklist and version the initial baseline; do not begin Pattern, Graphics, Smart Size, product, customer, or production work during M0.

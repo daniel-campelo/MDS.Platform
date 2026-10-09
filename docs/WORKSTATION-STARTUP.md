@@ -2,6 +2,30 @@
 
 Este roteiro inicia somente a fundação M0: PostgreSQL, API e Local Agent. Não há tela de produto nesta etapa.
 
+## Inicialização rápida
+
+Na raiz do projeto, abra um PowerShell e execute:
+
+```powershell
+.\scripts\Start-Staging.ps1
+```
+
+O roteiro solicita a senha atual do banco sem exibi-la, inicia PostgreSQL na porta `5433`, compila a solução e inicia API e Local Agent em segundo plano. Para uma execução posterior sem recompilar, use `./scripts/Start-Staging.ps1 -SkipBuild`.
+
+Verifique o ambiente com:
+
+```powershell
+.\scripts\Test-Staging.ps1
+```
+
+Os registros ficam em `work\logs`. Para encerrar API, Agent e o contêiner, sem apagar os dados do banco:
+
+```powershell
+.\scripts\Stop-Staging.ps1
+```
+
+As etapas manuais abaixo continuam disponíveis para diagnóstico.
+
 ## 1. Banco de dados
 
 Abra o Docker Desktop. Em um PowerShell na raiz do projeto, execute:
