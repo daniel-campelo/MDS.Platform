@@ -1,12 +1,13 @@
 using System.Diagnostics;
+using System.Net;
 using System.Security.Claims;
+using System.Text.Json;
 using System.Text.Encodings.Web;
 using MDS.SharedKernel;
 using MDS.Studio.Application;
 using MDS.Studio.Infrastructure;
 using MDS.Studio.Domain;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -20,27 +21,30 @@ builder.Services.AddScoped<IInbox, EfInbox>();
 builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("postgresql");
 
 var identityOptions = builder.Configuration.GetSection(SharedIdentityOptions.SectionName).Get<SharedIdentityOptions>() ?? new SharedIdentityOptions();
+builder.Services.AddSingleton(identityOptions);
 if (identityOptions.Mode.Equals(SharedIdentityOptions.DevelopmentMode, StringComparison.OrdinalIgnoreCase))
 {
     builder.Services.AddAuthentication(DevelopmentAuthHandler.SchemeName)
         .AddScheme<AuthenticationSchemeOptions, DevelopmentAuthHandler>(DevelopmentAuthHandler.SchemeName, _ => { });
 }
-else if (identityOptions.Mode.Equals(SharedIdentityOptions.SharedJwtMode, StringComparison.OrdinalIgnoreCase))
+else if (identityOptions.Mode.Equals(SharedIdentityOptions.CoreSessionMode, StringComparison.OrdinalIgnoreCase))
 {
-    if (string.IsNullOrWhiteSpace(identityOptions.Authority) || string.IsNullOrWhiteSpace(identityOptions.Audience))
+    if (!Uri.TryCreate(identityOptions.CoreBaseUrl, UriKind.Absolute, out var coreBaseUri))
     {
         throw new InvalidOperationException(
-            "MDS-STUDIO-IDENTITY-001: Shared JWT authentication requires Authentication:Authority and Authentication:Audience.");
+            "MDS-STUDIO-IDENTITY-001: Core session authentication requires a valid Authentication:CoreBaseUrl.");
     }
 
-    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-        .AddJwtBearer(options =>
-        {
-            options.Authority = identityOptions.Authority;
-            options.Audience = identityOptions.Audience;
-            options.RequireHttpsMetadata = identityOptions.RequireHttpsMetadata;
-            options.TokenValidationParameters.NameClaimType = ClaimTypes.Name;
-        });
+    if (identityOptions.RequireHttps && !coreBaseUri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+    {
+        throw new InvalidOperationException(
+            "MDS-STUDIO-IDENTITY-001: Authentication:CoreBaseUrl must use HTTPS when Authentication:RequireHttps is true.");
+    }
+
+    var coreApiBaseUri = new Uri(coreBaseUri.AbsoluteUri.TrimEnd('/') + "/", UriKind.Absolute);
+    builder.Services.AddHttpClient(CoreSessionAuthHandler.HttpClientName, client => client.BaseAddress = coreApiBaseUri);
+    builder.Services.AddAuthentication(CoreSessionAuthHandler.SchemeName)
+        .AddScheme<AuthenticationSchemeOptions, CoreSessionAuthHandler>(CoreSessionAuthHandler.SchemeName, _ => { });
 }
 else
 {
@@ -156,12 +160,11 @@ public sealed class SharedIdentityOptions
 {
     public const string SectionName = "Authentication";
     public const string DevelopmentMode = "Development";
-    public const string SharedJwtMode = "SharedJwt";
+    public const string CoreSessionMode = "CoreSession";
 
-    public string Mode { get; init; } = SharedJwtMode;
-    public string? Authority { get; init; }
-    public string? Audience { get; init; }
-    public bool RequireHttpsMetadata { get; init; } = true;
+    public string Mode { get; init; } = CoreSessionMode;
+    public string? CoreBaseUrl { get; init; }
+    public bool RequireHttps { get; init; } = true;
 }
 public sealed class DatabaseHealthCheck(IServiceScopeFactory scopeFactory) : IHealthCheck
 {
@@ -179,4 +182,38 @@ public sealed class DevelopmentAuthHandler(IOptionsMonitor<AuthenticationSchemeO
   var claims = new[] { new Claim(ClaimTypes.NameIdentifier, Request.Headers["X-MDS-User"].FirstOrDefault() ?? "development-user"), new Claim(ClaimTypes.Name, "Development User"), new Claim("permission", Permissions.StudioAccess), new Claim("permission", Permissions.AdminDiagnostics), new Claim("permission", Permissions.AgentManage) };
   return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(new ClaimsIdentity(claims, Scheme.Name)), Scheme.Name)));
  }
+}
+public sealed class CoreSessionAuthHandler(
+ IOptionsMonitor<AuthenticationSchemeOptions> options,
+ ILoggerFactory logger,
+ UrlEncoder encoder,
+ IHttpClientFactory httpClientFactory) : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
+{
+ public const string SchemeName = "mds-core-session";
+ public const string HttpClientName = "mds-core-identity";
+ private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
+ protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
+ {
+  var authorization = Request.Headers.Authorization.FirstOrDefault();
+  if (string.IsNullOrWhiteSpace(authorization)) return AuthenticateResult.NoResult();
+  if (!authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)) return AuthenticateResult.Fail("Unsupported authorization scheme.");
+
+  using var request = new HttpRequestMessage(HttpMethod.Get, "auth/me");
+  request.Headers.TryAddWithoutValidation("Authorization", authorization);
+  using var response = await httpClientFactory.CreateClient(HttpClientName).SendAsync(request, Context.RequestAborted);
+  if (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden) return AuthenticateResult.Fail("MDS Core session is invalid or expired.");
+  if (!response.IsSuccessStatusCode) return AuthenticateResult.Fail("MDS Core identity service is unavailable.");
+
+  var identity = await JsonSerializer.DeserializeAsync<CoreIdentityResponse>(await response.Content.ReadAsStreamAsync(Context.RequestAborted), JsonOptions, Context.RequestAborted);
+  if (identity is null || string.IsNullOrWhiteSpace(identity.Id) || string.IsNullOrWhiteSpace(identity.Username)) return AuthenticateResult.Fail("MDS Core returned an invalid identity response.");
+
+  var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, identity.Id), new(ClaimTypes.Name, identity.Username) };
+  if (!string.IsNullOrWhiteSpace(identity.Email)) claims.Add(new Claim(ClaimTypes.Email, identity.Email));
+  claims.AddRange((identity.Roles ?? []).Distinct(StringComparer.Ordinal).Select(role => new Claim(ClaimTypes.Role, role)));
+  claims.AddRange((identity.Permissions ?? []).Distinct(StringComparer.Ordinal).Select(permission => new Claim("permission", permission)));
+  return AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(new ClaimsIdentity(claims, Scheme.Name)), Scheme.Name));
+ }
+
+ private sealed record CoreIdentityResponse(string? Id, string? Username, string? Email, string[]? Roles, string[]? Permissions);
 }
