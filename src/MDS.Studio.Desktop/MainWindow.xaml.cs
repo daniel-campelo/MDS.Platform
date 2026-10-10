@@ -750,11 +750,34 @@ public partial class MainWindow : Window
                 0 => "Local Agent: aguardando inscrição.",
                 _ => $"Local Agent: {string.Join(" · ", agents.Select(agent => $"{agent.MachineName} ({(agent.IsAuthorized ? "autorizado" : "aguardando autorização")})"))}"
             };
+            await RefreshWorkspaceSummaryAsync();
         }
         catch (HttpRequestException)
         {
             StudioStatusText.Text = "API do Studio indisponível.";
             AgentStatusText.Text = "Não foi possível consultar o agente local.";
+        }
+    }
+
+    private async Task RefreshWorkspaceSummaryAsync()
+    {
+        try
+        {
+            var response = await studioClient.GetAsync("dashboard");
+            if (!response.IsSuccessStatusCode)
+            {
+                WorkspaceSummaryText.Text = "Resumo indisponível.";
+                return;
+            }
+
+            var summary = await response.Content.ReadFromJsonAsync<StudioDashboard>();
+            WorkspaceSummaryText.Text = summary is null
+                ? "Resumo indisponível."
+                : $"Projetos: {summary.Projects} · Referências: {summary.LibraryItems} · Moldes: {summary.Patterns}";
+        }
+        catch (HttpRequestException)
+        {
+            WorkspaceSummaryText.Text = "Resumo indisponível.";
         }
     }
 
@@ -770,6 +793,7 @@ public partial class MainWindow : Window
     private sealed record StudioUser(string? Id);
     private sealed record StudioAgent(string MachineName, bool IsAuthorized);
     private sealed record StudioDiagnostics(string? Environment, string? Api);
+    private sealed record StudioDashboard(int Projects, int LibraryItems, int Patterns);
     private sealed record CreateProjectRequest(string Name, string LocalPath);
     private sealed record CreateLibraryItemRequest(string Name, string Type, string LocalPath, Guid? ProjectId);
     private sealed record UpdateLibraryItemRequest(Guid? ProjectId);

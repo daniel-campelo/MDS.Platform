@@ -79,6 +79,12 @@ app.MapHealthChecks("/health");
 app.MapGet("/version", (IHostEnvironment env) => Results.Ok(new { product = "MDS Studio API", version = "0.0.1", environment = env.EnvironmentName }));
 app.MapGet("/me", (ClaimsPrincipal user) => Results.Ok(new { id = user.FindFirstValue(ClaimTypes.NameIdentifier), name = user.Identity?.Name, permissions = user.FindAll("permission").Select(x => x.Value) })).RequireAuthorization(Permissions.StudioAccess);
 app.MapGet("/diagnostics", (IHostEnvironment env) => Results.Ok(new { environment = env.EnvironmentName, api = "0.0.1" })).RequireAuthorization(Permissions.AdminDiagnostics);
+app.MapGet("/dashboard", async (StudioDbContext db, CancellationToken ct) => Results.Ok(new
+{
+    projects = await db.Projects.CountAsync(ct),
+    libraryItems = await db.FileAssets.CountAsync(x => x.LocalPath != null, ct),
+    patterns = await db.Patterns.CountAsync(ct)
+})).RequireAuthorization(Permissions.StudioAccess);
 app.MapGet("/library", async (Guid? projectId, StudioDbContext db, CancellationToken ct) => Results.Ok(await (
     from asset in db.FileAssets
     join project in db.Projects on asset.ProjectId equals project.Id into projects
