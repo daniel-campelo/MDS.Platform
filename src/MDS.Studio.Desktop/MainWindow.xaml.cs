@@ -351,6 +351,8 @@ public partial class MainWindow : Window
             }
 
             var items = await response.Content.ReadFromJsonAsync<ProjectOrganizationItem[]>() ?? [];
+            OrganizationItemSelector.ItemsSource = items;
+            OrganizationItemSelector.SelectedItem = null;
             OrganizationListText.Text = items.Length == 0
                 ? "Nenhum item interno registrado."
                 : string.Join(Environment.NewLine + Environment.NewLine, items.Select(item => $"{item.Title} · {item.Status}{(string.IsNullOrWhiteSpace(item.Notes) ? string.Empty : Environment.NewLine + item.Notes)}"));
@@ -358,6 +360,33 @@ public partial class MainWindow : Window
         catch (HttpRequestException)
         {
             OrganizationListText.Text = "Os itens internos não estão disponíveis.";
+        }
+    }
+
+    private async void UpdateOrganizationItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (currentProjectId is null) return;
+        if (OrganizationItemSelector.SelectedItem is not ProjectOrganizationItem item)
+        {
+            ProjectsStatusText.Text = "Escolha um item interno antes de atualizar a situação.";
+            return;
+        }
+
+        try
+        {
+            var response = await studioClient.PutAsJsonAsync($"projects/{currentProjectId}/organization/{item.ItemId}", new UpdateProjectOrganizationItemRequest(SelectedContent(OrganizationExistingStatusInput, "Pendente")));
+            if (!response.IsSuccessStatusCode)
+            {
+                ProjectsStatusText.Text = $"Não foi possível atualizar o item (resposta {(int)response.StatusCode}).";
+                return;
+            }
+
+            ProjectsStatusText.Text = "Situação do item atualizada.";
+            await RefreshOrganizationAsync();
+        }
+        catch (HttpRequestException)
+        {
+            ProjectsStatusText.Text = "Não foi possível alcançar a API do Studio.";
         }
     }
 
@@ -451,4 +480,5 @@ public partial class MainWindow : Window
     private sealed record UpdateProjectRequest(string Name, string LocalPath, string? Description, string Status);
     private sealed record CreateProjectOrganizationItemRequest(string Title, string? Notes, string Status);
     private sealed record ProjectOrganizationItem(Guid ItemId, string Title, string? Notes, string Status, DateTimeOffset CreatedAt);
+    private sealed record UpdateProjectOrganizationItemRequest(string Status);
 }

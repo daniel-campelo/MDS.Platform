@@ -22,7 +22,7 @@ public sealed class ProjectOrganizationItem
     public Guid ProjectId { get; init; }
     public required string Title { get; init; }
     public string? Notes { get; init; }
-    public string Status { get; init; } = "Pendente";
+    public string Status { get; set; } = "Pendente";
     public DateTimeOffset CreatedAt { get; init; }
 }
 

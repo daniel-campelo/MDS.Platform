@@ -126,6 +126,15 @@ app.MapPost("/projects/{projectId:guid}/organization", async (Guid projectId, Cr
     db.ProjectOrganizationItems.Add(item); await db.SaveChangesAsync(ct);
     return Results.Created($"/projects/{projectId}/organization/{item.Id}", new { itemId = item.Id, item.Title, item.Notes, item.Status, item.CreatedAt });
 }).RequireAuthorization(Permissions.StudioAccess);
+app.MapPut("/projects/{projectId:guid}/organization/{itemId:guid}", async (Guid projectId, Guid itemId, UpdateProjectOrganizationItemRequest request, StudioDbContext db, CancellationToken ct) =>
+{
+    if (!ProjectOrganizationRules.OrganizationStatuses.Contains(request.Status)) return Results.BadRequest(new { code = "MDS-STUDIO-PROJECT-002", message = "Organization status is invalid." });
+    var item = await db.ProjectOrganizationItems.SingleOrDefaultAsync(x => x.Id == itemId && x.ProjectId == projectId, ct);
+    if (item is null) return Results.NotFound(new { code = "MDS-STUDIO-PROJECT-002", message = "Organization item not found." });
+    item.Status = request.Status;
+    await db.SaveChangesAsync(ct);
+    return Results.Ok(new { itemId = item.Id, item.Title, item.Notes, item.Status, item.CreatedAt });
+}).RequireAuthorization(Permissions.StudioAccess);
 app.MapPost("/agents/enrollment-requests", async (EnrollmentRequest request, StudioDbContext db, CancellationToken ct) =>
 {
     if (string.IsNullOrWhiteSpace(request.MachineName) || string.IsNullOrWhiteSpace(request.AgentVersion))
@@ -206,6 +215,7 @@ public partial class Program { }
 public sealed record CreateProjectRequest(string? Name, string? LocalPath);
 public sealed record UpdateProjectRequest(string? Name, string? LocalPath, string? Description, string Status);
 public sealed record CreateProjectOrganizationItemRequest(string? Title, string? Notes, string Status);
+public sealed record UpdateProjectOrganizationItemRequest(string Status);
 public static class ProjectOrganizationRules
 {
     public static readonly HashSet<string> ProjectStatuses = ["Ativo", "Em espera", "Concluído"];
