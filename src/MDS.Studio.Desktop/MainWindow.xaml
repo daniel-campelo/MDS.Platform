@@ -1,8 +1,13 @@
 <Window x:Class="MDS.Studio.Desktop.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="MDS Studio 0.0.1" Height="580" Width="940" WindowStartupLocation="CenterScreen">
  <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="190"/><ColumnDefinition/></Grid.ColumnDefinitions>
-  <StackPanel Background="#17202A"><TextBlock Text="MDS STUDIO" Foreground="White" FontSize="20" Margin="20"/><TextBlock Text="Início&#x0a;Projetos&#x0a;Biblioteca&#x0a;Moldes&#x0a;Diagnóstico&#x0a;Configurações" Foreground="White" FontSize="15" LineHeight="34" Margin="20,0"/></StackPanel>
+  <StackPanel Background="#17202A"><TextBlock Text="MDS STUDIO" Foreground="White" FontSize="20" Margin="20"/>
+   <Button Content="Início" HorizontalContentAlignment="Left" Foreground="White" Background="Transparent" BorderThickness="0" FontSize="15" Padding="20,8" Click="Home_Click"/>
+   <TextBlock Text="Projetos&#x0a;Biblioteca&#x0a;Moldes" Foreground="#BFC9CA" FontSize="15" LineHeight="34" Margin="20,0"/>
+   <Button Content="Diagnóstico" HorizontalContentAlignment="Left" Foreground="White" Background="Transparent" BorderThickness="0" FontSize="15" Padding="20,8" Click="Diagnostics_Click"/>
+   <TextBlock Text="Configurações" Foreground="#BFC9CA" FontSize="15" Margin="20,8"/>
+  </StackPanel>
   <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto"><StackPanel Margin="32">
-   <Border Background="#FFF4CE" Padding="12"><TextBlock Text="🧪 MDS STUDIO — HOMOLOGAÇÃO" FontWeight="Bold"/></Border>
+   <StackPanel x:Name="HomePanel"><Border Background="#FFF4CE" Padding="12"><TextBlock Text="🧪 MDS STUDIO — HOMOLOGAÇÃO" FontWeight="Bold"/></Border>
    <TextBlock Text="Bem-vindo ao MDS Studio" FontSize="28" Margin="0,28,0,4"/><TextBlock Text="Use a sua conta já existente do MDS Core." Foreground="Gray"/>
    <Border x:Name="LoginPanel" BorderBrush="#D7DBDD" BorderThickness="1" CornerRadius="6" Padding="20" Margin="0,28,0,0">
     <StackPanel><TextBlock Text="Entrar com MDS Core" FontSize="20" FontWeight="SemiBold"/><TextBlock Text="A senha é enviada somente ao MDS Core e não é salva pelo Studio." Foreground="Gray" Margin="0,6,0,18"/>
@@ -21,6 +26,15 @@
    </Border>
    <TextBlock x:Name="StatusText" Margin="0,18,0,0" TextWrapping="Wrap" Foreground="#34495E"/>
    <TextBlock Text="Foundation 0.0.1 · As áreas de produto continuam em desenvolvimento." Foreground="Gray" Margin="0,36,0,0"/>
+   </StackPanel>
+   <StackPanel x:Name="DiagnosticsPanel" Visibility="Collapsed"><Border Background="#FFF4CE" Padding="12"><TextBlock Text="🧪 DIAGNÓSTICO — HOMOLOGAÇÃO" FontWeight="Bold"/></Border>
+    <TextBlock Text="Diagnóstico do MDS Studio" FontSize="28" Margin="0,28,0,4"/><TextBlock Text="Consulta somente. Nenhuma alteração é feita nesta tela." Foreground="Gray"/>
+    <Border Background="#F8F9F9" BorderBrush="#D5DBDB" BorderThickness="1" CornerRadius="6" Padding="20" Margin="0,28,0,0"><StackPanel>
+     <TextBlock x:Name="DiagnosticIdentityText" FontSize="16" FontWeight="SemiBold"/><TextBlock x:Name="DiagnosticApiText" Margin="0,16,0,4"/><TextBlock x:Name="DiagnosticAgentText" TextWrapping="Wrap"/>
+     <StackPanel Orientation="Horizontal" Margin="0,20,0,0"><Button Content="Atualizar diagnóstico" Padding="14,7" Click="RefreshDiagnostics_Click"/><Button Content="Voltar ao início" Margin="12,0,0,0" Padding="14,7" Click="Home_Click"/></StackPanel>
+    </StackPanel></Border>
+    <TextBlock x:Name="DiagnosticStatusText" Margin="0,18,0,0" TextWrapping="Wrap" Foreground="#34495E"/>
+   </StackPanel>
   </StackPanel></ScrollViewer>
  </Grid>
 </Window>

@@ -10,6 +10,7 @@ public partial class MainWindow : Window
     private readonly HttpClient coreClient = new();
     private readonly HttpClient studioClient = new();
     private string? sessionToken;
+    private string? currentUsername;
 
     public MainWindow() => InitializeComponent();
 
@@ -40,6 +41,7 @@ public partial class MainWindow : Window
             }
 
             sessionToken = login.Token;
+            currentUsername = login.User.Username;
             PasswordInput.Clear();
             UserNameText.Text = $"{login.User.Username} — conectado pelo MDS Core";
             RoleText.Text = login.User.Roles?.Length > 0 ? $"Perfil: {string.Join(", ", login.User.Roles)}" : "Perfil não informado.";
@@ -73,6 +75,7 @@ public partial class MainWindow : Window
         finally
         {
             sessionToken = null;
+            currentUsername = null;
             coreClient.DefaultRequestHeaders.Authorization = null;
             studioClient.DefaultRequestHeaders.Authorization = null;
             SessionPanel.Visibility = Visibility.Collapsed;
@@ -133,6 +136,58 @@ public partial class MainWindow : Window
 
     private async void RefreshStatus_Click(object sender, RoutedEventArgs e) => await RefreshStudioStatusAsync();
 
+    private void Home_Click(object sender, RoutedEventArgs e)
+    {
+        DiagnosticsPanel.Visibility = Visibility.Collapsed;
+        HomePanel.Visibility = Visibility.Visible;
+    }
+
+    private async void Diagnostics_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(sessionToken))
+        {
+            StatusText.Text = "Entre com sua conta do MDS Core antes de consultar o diagnóstico.";
+            HomePanel.Visibility = Visibility.Visible;
+            DiagnosticsPanel.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        HomePanel.Visibility = Visibility.Collapsed;
+        DiagnosticsPanel.Visibility = Visibility.Visible;
+        await RefreshDiagnosticsAsync();
+    }
+
+    private async void RefreshDiagnostics_Click(object sender, RoutedEventArgs e) => await RefreshDiagnosticsAsync();
+
+    private async Task RefreshDiagnosticsAsync()
+    {
+        try
+        {
+            var diagnosticsResponse = await studioClient.GetAsync("diagnostics");
+            if (!diagnosticsResponse.IsSuccessStatusCode)
+            {
+                DiagnosticStatusText.Text = $"O Studio recusou a consulta de diagnóstico (resposta {(int)diagnosticsResponse.StatusCode}).";
+                return;
+            }
+
+            var diagnostics = await diagnosticsResponse.Content.ReadFromJsonAsync<StudioDiagnostics>();
+            var agentsResponse = await studioClient.GetAsync("agents");
+            var agents = agentsResponse.IsSuccessStatusCode
+                ? await agentsResponse.Content.ReadFromJsonAsync<StudioAgent[]>() ?? []
+                : [];
+            DiagnosticIdentityText.Text = $"Usuário: {currentUsername}";
+            DiagnosticApiText.Text = $"API do Studio: disponível · versão {diagnostics?.Api ?? "não informada"} · ambiente {diagnostics?.Environment ?? "não informado"}.";
+            DiagnosticAgentText.Text = agents.Length == 0
+                ? "Local Agent: nenhum agente inscrito."
+                : $"Local Agent: {string.Join(" · ", agents.Select(agent => $"{agent.MachineName} ({(agent.IsAuthorized ? "autorizado" : "aguardando autorização")})"))}";
+            DiagnosticStatusText.Text = "Consulta atualizada.";
+        }
+        catch (HttpRequestException)
+        {
+            DiagnosticStatusText.Text = "Não foi possível consultar a API do Studio.";
+        }
+    }
+
     private async Task RefreshStudioStatusAsync()
     {
         try
@@ -178,4 +233,5 @@ public partial class MainWindow : Window
     private sealed record CoreUser(string Id, string Username, string[]? Roles, string[]? Permissions);
     private sealed record StudioUser(string? Id);
     private sealed record StudioAgent(string MachineName, bool IsAuthorized);
+    private sealed record StudioDiagnostics(string? Environment, string? Api);
 }
