@@ -54,6 +54,8 @@
       <TextBlock Text="Descrição" Margin="0,14,0,4"/><TextBox x:Name="ProjectDescriptionInput" Padding="8" MaxLength="2000" TextWrapping="Wrap" AcceptsReturn="True" Height="72"/>
       <Button Content="Salvar detalhes" Width="120" HorizontalAlignment="Left" Margin="0,20,0,0" Padding="10,6" Click="SaveProjectDetails_Click"/>
      </StackPanel></Border>
+     <TextBlock Text="Itens vinculados ao projeto" FontSize="18" FontWeight="SemiBold" Margin="0,26,0,8"/>
+     <Border Background="White" BorderBrush="#D5DBDB" BorderThickness="1" Padding="14"><StackPanel><TextBlock Text="Referências da Biblioteca" FontWeight="SemiBold"/><TextBlock x:Name="ProjectLibraryListText" TextWrapping="Wrap" Margin="0,6,0,16"/><TextBlock Text="Moldes" FontWeight="SemiBold"/><TextBlock x:Name="ProjectPatternsListText" TextWrapping="Wrap" Margin="0,6,0,0"/></StackPanel></Border>
      <TextBlock Text="Organização interna" FontSize="18" FontWeight="SemiBold" Margin="0,26,0,4"/><TextBlock Text="Registre etapas ou anotações internas. Isto não cria arquivos, moldes nem produção." Foreground="Gray" TextWrapping="Wrap"/>
      <Border Background="White" BorderBrush="#D5DBDB" BorderThickness="1" Padding="20" Margin="0,12,0,0"><StackPanel>
       <TextBlock Text="Título" Margin="0,0,0,4"/><TextBox x:Name="OrganizationTitleInput" Padding="8" MaxLength="160"/>

@@ -506,6 +506,7 @@ public partial class MainWindow : Window
             ProjectDescriptionInput.Text = project.Description ?? string.Empty;
             SelectProjectStatus(project.Status);
             ProjectDetailsPanel.Visibility = Visibility.Visible;
+            await RefreshProjectLinksAsync();
             await RefreshOrganizationAsync();
         }
         catch (HttpRequestException)
@@ -537,6 +538,7 @@ public partial class MainWindow : Window
             ProjectDetailsHeading.Text = name;
             ProjectsStatusText.Text = "Detalhes salvos.";
             await RefreshProjectsAsync();
+            await RefreshProjectLinksAsync();
         }
         catch (HttpRequestException)
         {
@@ -597,6 +599,33 @@ public partial class MainWindow : Window
         catch (HttpRequestException)
         {
             OrganizationListText.Text = "Os itens internos não estão disponíveis.";
+        }
+    }
+
+    private async Task RefreshProjectLinksAsync()
+    {
+        if (currentProjectId is null) return;
+        try
+        {
+            var libraryResponse = await studioClient.GetAsync($"library?projectId={currentProjectId}");
+            var patternsResponse = await studioClient.GetAsync($"patterns?projectId={currentProjectId}");
+            var library = libraryResponse.IsSuccessStatusCode
+                ? await libraryResponse.Content.ReadFromJsonAsync<LibraryItem[]>() ?? []
+                : [];
+            var patterns = patternsResponse.IsSuccessStatusCode
+                ? await patternsResponse.Content.ReadFromJsonAsync<StudioPattern[]>() ?? []
+                : [];
+            ProjectLibraryListText.Text = library.Length == 0
+                ? "Nenhuma referência vinculada."
+                : string.Join(Environment.NewLine, library.Select(item => $"{item.OriginalName} · {item.ContentType}"));
+            ProjectPatternsListText.Text = patterns.Length == 0
+                ? "Nenhum molde vinculado."
+                : string.Join(Environment.NewLine, patterns.Select(pattern => $"{pattern.Name} · {pattern.Status}"));
+        }
+        catch (HttpRequestException)
+        {
+            ProjectLibraryListText.Text = "Não foi possível consultar as referências vinculadas.";
+            ProjectPatternsListText.Text = "Não foi possível consultar os moldes vinculados.";
         }
     }
 

@@ -79,11 +79,11 @@ app.MapHealthChecks("/health");
 app.MapGet("/version", (IHostEnvironment env) => Results.Ok(new { product = "MDS Studio API", version = "0.0.1", environment = env.EnvironmentName }));
 app.MapGet("/me", (ClaimsPrincipal user) => Results.Ok(new { id = user.FindFirstValue(ClaimTypes.NameIdentifier), name = user.Identity?.Name, permissions = user.FindAll("permission").Select(x => x.Value) })).RequireAuthorization(Permissions.StudioAccess);
 app.MapGet("/diagnostics", (IHostEnvironment env) => Results.Ok(new { environment = env.EnvironmentName, api = "0.0.1" })).RequireAuthorization(Permissions.AdminDiagnostics);
-app.MapGet("/library", async (StudioDbContext db, CancellationToken ct) => Results.Ok(await (
+app.MapGet("/library", async (Guid? projectId, StudioDbContext db, CancellationToken ct) => Results.Ok(await (
     from asset in db.FileAssets
     join project in db.Projects on asset.ProjectId equals project.Id into projects
     from project in projects.DefaultIfEmpty()
-    where asset.LocalPath != null
+    where asset.LocalPath != null && (projectId == null || asset.ProjectId == projectId)
     orderby asset.OriginalName
     select new { assetId = asset.Id, asset.OriginalName, asset.ContentType, asset.LocalPath, asset.ProjectId, projectName = project == null ? null : project.Name, asset.CreatedAt }
 ).ToListAsync(ct))).RequireAuthorization(Permissions.StudioAccess);
@@ -112,9 +112,10 @@ app.MapPut("/library/{assetId:guid}", async (Guid assetId, UpdateLibraryItemRequ
     await db.SaveChangesAsync(ct);
     return Results.Ok(new { assetId = asset.Id, asset.OriginalName, asset.ProjectId });
 }).RequireAuthorization(Permissions.StudioAccess);
-app.MapGet("/patterns", async (StudioDbContext db, CancellationToken ct) => Results.Ok(await (
+app.MapGet("/patterns", async (Guid? projectId, StudioDbContext db, CancellationToken ct) => Results.Ok(await (
     from pattern in db.Patterns
     join project in db.Projects on pattern.ProjectId equals project.Id
+    where projectId == null || pattern.ProjectId == projectId
     orderby pattern.Name
     select new { patternId = pattern.Id, pattern.Name, pattern.Notes, pattern.Status, pattern.ProjectId, projectName = project.Name, pattern.CreatedAt }
 ).ToListAsync(ct))).RequireAuthorization(Permissions.StudioAccess);
