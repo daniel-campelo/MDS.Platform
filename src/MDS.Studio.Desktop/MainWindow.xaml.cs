@@ -146,7 +146,14 @@ public partial class MainWindow : Window
             }
 
             StudioStatusText.Text = "API do Studio: disponível.";
-            var agents = await studioClient.GetFromJsonAsync<StudioAgent[]>("agents") ?? [];
+            var agentsResponse = await studioClient.GetAsync("agents");
+            if (!agentsResponse.IsSuccessStatusCode)
+            {
+                AgentStatusText.Text = $"Não foi possível consultar o agente local (resposta {(int)agentsResponse.StatusCode}).";
+                return;
+            }
+
+            var agents = await agentsResponse.Content.ReadFromJsonAsync<StudioAgent[]>() ?? [];
             AgentStatusText.Text = agents.Length switch
             {
                 0 => "Local Agent: aguardando inscrição.",
