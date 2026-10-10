@@ -208,6 +208,7 @@ public partial class MainWindow : Window
         ProjectsPanel.Visibility = Visibility.Collapsed;
         ProjectDetailsPanel.Visibility = Visibility.Collapsed;
         LibraryPanel.Visibility = Visibility.Visible;
+        await RefreshLibraryProjectsAsync();
         await RefreshLibraryAsync();
     }
 
@@ -225,7 +226,8 @@ public partial class MainWindow : Window
 
         try
         {
-            var response = await studioClient.PostAsJsonAsync("library", new CreateLibraryItemRequest(name, SelectedContent(LibraryTypeInput, "Referência"), localPath));
+            var projectId = (LibraryProjectSelector.SelectedItem as StudioProject)?.ProjectId;
+            var response = await studioClient.PostAsJsonAsync("library", new CreateLibraryItemRequest(name, SelectedContent(LibraryTypeInput, "Referência"), localPath, projectId));
             if (!response.IsSuccessStatusCode)
             {
                 LibraryStatusText.Text = $"Não foi possível adicionar a referência (resposta {(int)response.StatusCode}). O caminho talvez já esteja cadastrado.";
@@ -235,6 +237,7 @@ public partial class MainWindow : Window
             LibraryNameInput.Clear();
             LibraryPathInput.Clear();
             LibraryTypeInput.SelectedIndex = 0;
+            LibraryProjectSelector.SelectedItem = null;
             LibraryStatusText.Text = "Referência adicionada à biblioteca.";
             await RefreshLibraryAsync();
         }
@@ -259,13 +262,29 @@ public partial class MainWindow : Window
             var items = await response.Content.ReadFromJsonAsync<LibraryItem[]>() ?? [];
             LibraryListText.Text = items.Length == 0
                 ? "Nenhuma referência cadastrada ainda."
-                : string.Join(Environment.NewLine, items.Select(item => $"{item.OriginalName} · {item.ContentType} — {item.LocalPath}"));
+                : string.Join(Environment.NewLine, items.Select(item => $"{item.OriginalName} · {item.ContentType} — {item.LocalPath}{(string.IsNullOrWhiteSpace(item.ProjectName) ? " · Biblioteca geral" : $" · Projeto: {item.ProjectName}")}"));
             LibraryStatusText.Text = items.Length == 0 ? "Lista atualizada." : $"{items.Length} referência(s) cadastrada(s).";
         }
         catch (HttpRequestException)
         {
             LibraryListText.Text = "A biblioteca não está disponível.";
             LibraryStatusText.Text = "Não foi possível alcançar a API do Studio.";
+        }
+    }
+
+    private async Task RefreshLibraryProjectsAsync()
+    {
+        try
+        {
+            var response = await studioClient.GetAsync("projects");
+            LibraryProjectSelector.ItemsSource = response.IsSuccessStatusCode
+                ? await response.Content.ReadFromJsonAsync<StudioProject[]>() ?? []
+                : [];
+            LibraryProjectSelector.SelectedItem = null;
+        }
+        catch (HttpRequestException)
+        {
+            LibraryProjectSelector.ItemsSource = null;
         }
     }
 
@@ -556,8 +575,8 @@ public partial class MainWindow : Window
     private sealed record StudioAgent(string MachineName, bool IsAuthorized);
     private sealed record StudioDiagnostics(string? Environment, string? Api);
     private sealed record CreateProjectRequest(string Name, string LocalPath);
-    private sealed record CreateLibraryItemRequest(string Name, string Type, string LocalPath);
-    private sealed record LibraryItem(Guid AssetId, string OriginalName, string ContentType, string LocalPath, DateTimeOffset CreatedAt);
+    private sealed record CreateLibraryItemRequest(string Name, string Type, string LocalPath, Guid? ProjectId);
+    private sealed record LibraryItem(Guid AssetId, string OriginalName, string ContentType, string LocalPath, Guid? ProjectId, string? ProjectName, DateTimeOffset CreatedAt);
     private sealed record StudioProject(Guid ProjectId, string Name, string LocalPath, string? Description, string Status, DateTimeOffset CreatedAt);
     private sealed record UpdateProjectRequest(string Name, string LocalPath, string? Description, string Status);
     private sealed record CreateProjectOrganizationItemRequest(string Title, string? Notes, string Status);

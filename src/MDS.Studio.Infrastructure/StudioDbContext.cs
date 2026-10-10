@@ -16,7 +16,7 @@ public sealed class StudioDbContext(DbContextOptions<StudioDbContext> options) :
     public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
     protected override void OnModelCreating(ModelBuilder b)
     {
-        b.Entity<FileAsset>(e => { e.ToTable("file_assets"); e.HasKey(x => x.Id); e.Property(x => x.ContentType).HasMaxLength(80); e.Property(x => x.LocalPath).HasMaxLength(1024); e.Property(x => x.Status).HasConversion<string>(); });
+        b.Entity<FileAsset>(e => { e.ToTable("file_assets"); e.HasKey(x => x.Id); e.Property(x => x.ContentType).HasMaxLength(80); e.Property(x => x.LocalPath).HasMaxLength(1024); e.HasIndex(x => x.ProjectId); e.Property(x => x.Status).HasConversion<string>(); });
         b.Entity<StudioProject>(e => { e.ToTable("studio_projects"); e.HasKey(x => x.Id); e.Property(x => x.Name).HasMaxLength(160); e.Property(x => x.LocalPath).HasMaxLength(1024); e.Property(x => x.Description).HasMaxLength(2000); e.Property(x => x.Status).HasMaxLength(40); e.HasIndex(x => x.LocalPath).IsUnique(); });
         b.Entity<ProjectOrganizationItem>(e => { e.ToTable("project_organization_items"); e.HasKey(x => x.Id); e.Property(x => x.Title).HasMaxLength(160); e.Property(x => x.Notes).HasMaxLength(2000); e.Property(x => x.Status).HasMaxLength(40); e.HasIndex(x => x.ProjectId); });
         b.Entity<LocalAgent>(e => { e.ToTable("local_agents"); e.HasKey(x => x.Id); });
