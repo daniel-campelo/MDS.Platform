@@ -43,7 +43,11 @@ public partial class MainWindow : Window
             PasswordInput.Clear();
             UserNameText.Text = $"{login.User.Username} — conectado pelo MDS Core";
             RoleText.Text = login.User.Roles?.Length > 0 ? $"Perfil: {string.Join(", ", login.User.Roles)}" : "Perfil não informado.";
-            PermissionText.Text = login.User.Permissions?.Length > 0 ? $"Acessos: {string.Join(", ", login.User.Permissions)}" : "Nenhum acesso ao Studio foi encontrado para esta conta.";
+            var studioPermissions = (login.User.Permissions ?? [])
+                .Where(permission => permission.StartsWith("studio.", StringComparison.Ordinal) || permission == "agent.manage")
+                .OrderBy(permission => permission)
+                .ToArray();
+            PermissionText.Text = studioPermissions.Length > 0 ? $"Acessos do Studio: {string.Join(", ", studioPermissions)}" : "Nenhum acesso ao Studio foi encontrado para esta conta.";
             LoginPanel.Visibility = Visibility.Collapsed;
             SessionPanel.Visibility = Visibility.Visible;
             await ConfirmStudioSessionAsync(login.User);
@@ -119,10 +123,40 @@ public partial class MainWindow : Window
             StatusText.Text = studioUser?.Id == coreUser.Id
                 ? "Sessão confirmada: o Studio reconheceu esta identidade do MDS Core. A senha e o token não são gravados no computador."
                 : "A sessão do Core está ativa, mas o Studio ainda está no modo local. Reinicie-o com a opção de sessão do Core.";
+            if (studioUser?.Id == coreUser.Id) await RefreshStudioStatusAsync();
         }
         catch (HttpRequestException)
         {
             StatusText.Text = "A sessão do Core está ativa. Inicie também a API do Studio para confirmar a integração completa.";
+        }
+    }
+
+    private async void RefreshStatus_Click(object sender, RoutedEventArgs e) => await RefreshStudioStatusAsync();
+
+    private async Task RefreshStudioStatusAsync()
+    {
+        try
+        {
+            var healthResponse = await studioClient.GetAsync("health");
+            if (!healthResponse.IsSuccessStatusCode)
+            {
+                StudioStatusText.Text = "API do Studio indisponível.";
+                AgentStatusText.Text = "Não foi possível consultar o agente local.";
+                return;
+            }
+
+            StudioStatusText.Text = "API do Studio: disponível.";
+            var agents = await studioClient.GetFromJsonAsync<StudioAgent[]>("agents") ?? [];
+            AgentStatusText.Text = agents.Length switch
+            {
+                0 => "Local Agent: aguardando inscrição.",
+                _ => $"Local Agent: {string.Join(" · ", agents.Select(agent => $"{agent.MachineName} ({(agent.IsAuthorized ? "autorizado" : "aguardando autorização")})"))}"
+            };
+        }
+        catch (HttpRequestException)
+        {
+            StudioStatusText.Text = "API do Studio indisponível.";
+            AgentStatusText.Text = "Não foi possível consultar o agente local.";
         }
     }
 
@@ -136,4 +170,5 @@ public partial class MainWindow : Window
     private sealed record LoginResponse(string? Token, CoreUser? User);
     private sealed record CoreUser(string Id, string Username, string[]? Roles, string[]? Permissions);
     private sealed record StudioUser(string? Id);
+    private sealed record StudioAgent(string MachineName, bool IsAuthorized);
 }
