@@ -423,6 +423,8 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void ApplyLibraryFilters_Click(object sender, RoutedEventArgs e) => await RefreshLibraryAsync();
+
     private async void UpdateLibraryLink_Click(object sender, RoutedEventArgs e)
     {
         if (LibraryItemSelector.SelectedItem is not LibraryItem item)
@@ -472,13 +474,21 @@ public partial class MainWindow : Window
                 return;
             }
 
-            var items = await response.Content.ReadFromJsonAsync<LibraryItem[]>() ?? [];
+            var allItems = await response.Content.ReadFromJsonAsync<LibraryItem[]>() ?? [];
+            var selectedProjectId = (LibraryFilterProjectSelector.SelectedItem as StudioProject)?.ProjectId;
+            var selectedType = SelectedContent(LibraryFilterTypeInput, "Todos");
+            var items = allItems
+                .Where(item => selectedProjectId is null || item.ProjectId == selectedProjectId)
+                .Where(item => selectedType == "Todos" || item.ContentType == selectedType)
+                .ToArray();
             LibraryItemSelector.ItemsSource = items;
             LibraryItemSelector.SelectedItem = null;
             LibraryListText.Text = items.Length == 0
                 ? "Nenhuma referência cadastrada ainda."
                 : string.Join(Environment.NewLine, items.Select(item => $"{item.OriginalName} · {item.ContentType} — {item.LocalPath}{(string.IsNullOrWhiteSpace(item.ProjectName) ? " · Biblioteca geral" : $" · Projeto: {item.ProjectName}")}"));
-            LibraryStatusText.Text = items.Length == 0 ? "Lista atualizada." : $"{items.Length} referência(s) cadastrada(s).";
+            LibraryStatusText.Text = items.Length == 0
+                ? "Nenhuma referência encontrada para os filtros escolhidos."
+                : $"{items.Length} de {allItems.Length} referência(s) exibida(s).";
         }
         catch (HttpRequestException)
         {
@@ -499,11 +509,14 @@ public partial class MainWindow : Window
             LibraryProjectSelector.SelectedItem = null;
             LibraryExistingProjectSelector.ItemsSource = LibraryProjectSelector.ItemsSource;
             LibraryExistingProjectSelector.SelectedItem = null;
+            LibraryFilterProjectSelector.ItemsSource = LibraryProjectSelector.ItemsSource;
+            LibraryFilterProjectSelector.SelectedItem = null;
         }
         catch (HttpRequestException)
         {
             LibraryProjectSelector.ItemsSource = null;
             LibraryExistingProjectSelector.ItemsSource = null;
+            LibraryFilterProjectSelector.ItemsSource = null;
         }
     }
 
