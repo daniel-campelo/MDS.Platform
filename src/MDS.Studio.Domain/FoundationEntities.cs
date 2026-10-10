@@ -20,8 +20,8 @@ public sealed class ProjectOrganizationItem
 {
     public Guid Id { get; init; } = Guid.NewGuid();
     public Guid ProjectId { get; init; }
-    public required string Title { get; init; }
-    public string? Notes { get; init; }
+    public required string Title { get; set; }
+    public string? Notes { get; set; }
     public string Status { get; set; } = "Pendente";
     public DateTimeOffset CreatedAt { get; init; }
 }

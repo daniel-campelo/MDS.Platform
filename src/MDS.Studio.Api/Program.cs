@@ -207,10 +207,12 @@ app.MapPost("/projects/{projectId:guid}/organization", async (Guid projectId, Cr
 }).RequireAuthorization(Permissions.StudioAccess);
 app.MapPut("/projects/{projectId:guid}/organization/{itemId:guid}", async (Guid projectId, Guid itemId, UpdateProjectOrganizationItemRequest request, StudioDbContext db, CancellationToken ct) =>
 {
-    if (!ProjectOrganizationRules.OrganizationStatuses.Contains(request.Status)) return Results.BadRequest(new { code = "MDS-STUDIO-PROJECT-002", message = "Organization status is invalid." });
+    var title = request.Title?.Trim();
+    var notes = request.Notes?.Trim();
+    if (string.IsNullOrWhiteSpace(title) || title.Length > 160 || notes?.Length > 2000 || !ProjectOrganizationRules.OrganizationStatuses.Contains(request.Status)) return Results.BadRequest(new { code = "MDS-STUDIO-PROJECT-002", message = "Organization item is invalid." });
     var item = await db.ProjectOrganizationItems.SingleOrDefaultAsync(x => x.Id == itemId && x.ProjectId == projectId, ct);
     if (item is null) return Results.NotFound(new { code = "MDS-STUDIO-PROJECT-002", message = "Organization item not found." });
-    item.Status = request.Status;
+    item.Title = title; item.Notes = notes; item.Status = request.Status;
     await db.SaveChangesAsync(ct);
     return Results.Ok(new { itemId = item.Id, item.Title, item.Notes, item.Status, item.CreatedAt });
 }).RequireAuthorization(Permissions.StudioAccess);
@@ -298,7 +300,7 @@ public sealed record CreatePatternRequest(Guid ProjectId, string? Name, string? 
 public sealed record UpdatePatternRequest(Guid ProjectId, string? Name, string? Notes, string Status);
 public sealed record UpdateProjectRequest(string? Name, string? LocalPath, string? Description, string Status);
 public sealed record CreateProjectOrganizationItemRequest(string? Title, string? Notes, string Status);
-public sealed record UpdateProjectOrganizationItemRequest(string Status);
+public sealed record UpdateProjectOrganizationItemRequest(string? Title, string? Notes, string Status);
 public static class ProjectOrganizationRules
 {
     public static readonly HashSet<string> ProjectStatuses = ["Ativo", "Em espera", "Concluído"];

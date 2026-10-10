@@ -705,23 +705,42 @@ public partial class MainWindow : Window
             ProjectsStatusText.Text = "Escolha um item interno antes de atualizar a situação.";
             return;
         }
+        var title = OrganizationExistingTitleInput.Text.Trim();
+        if (string.IsNullOrWhiteSpace(title))
+        {
+            ProjectsStatusText.Text = "Informe o título do item interno.";
+            return;
+        }
 
         try
         {
-            var response = await studioClient.PutAsJsonAsync($"projects/{currentProjectId}/organization/{item.ItemId}", new UpdateProjectOrganizationItemRequest(SelectedContent(OrganizationExistingStatusInput, "Pendente")));
+            var response = await studioClient.PutAsJsonAsync($"projects/{currentProjectId}/organization/{item.ItemId}", new UpdateProjectOrganizationItemRequest(title, OrganizationExistingNotesInput.Text.Trim(), SelectedContent(OrganizationExistingStatusInput, "Pendente")));
             if (!response.IsSuccessStatusCode)
             {
                 ProjectsStatusText.Text = $"Não foi possível atualizar o item (resposta {(int)response.StatusCode}).";
                 return;
             }
 
-            ProjectsStatusText.Text = "Situação do item atualizada.";
+            ProjectsStatusText.Text = "Item interno atualizado.";
             await RefreshOrganizationAsync();
         }
         catch (HttpRequestException)
         {
             ProjectsStatusText.Text = "Não foi possível alcançar a API do Studio.";
         }
+    }
+
+    private void OrganizationItemSelector_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (OrganizationItemSelector.SelectedItem is not ProjectOrganizationItem item) return;
+        OrganizationExistingTitleInput.Text = item.Title;
+        OrganizationExistingNotesInput.Text = item.Notes ?? string.Empty;
+        OrganizationExistingStatusInput.SelectedIndex = item.Status switch
+        {
+            "Em andamento" => 1,
+            "Concluído" => 2,
+            _ => 0
+        };
     }
 
     private void SelectProjectStatus(string status) => ProjectStatusInput.SelectedIndex = status switch
@@ -852,5 +871,5 @@ public partial class MainWindow : Window
     private sealed record UpdateProjectRequest(string Name, string LocalPath, string? Description, string Status);
     private sealed record CreateProjectOrganizationItemRequest(string Title, string? Notes, string Status);
     private sealed record ProjectOrganizationItem(Guid ItemId, string Title, string? Notes, string Status, DateTimeOffset CreatedAt);
-    private sealed record UpdateProjectOrganizationItemRequest(string Status);
+    private sealed record UpdateProjectOrganizationItemRequest(string Title, string? Notes, string Status);
 }
