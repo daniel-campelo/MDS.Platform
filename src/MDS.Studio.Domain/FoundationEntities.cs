@@ -29,9 +29,9 @@ public sealed class ProjectOrganizationItem
 public sealed class StudioPattern
 {
     public Guid Id { get; init; } = Guid.NewGuid();
-    public Guid ProjectId { get; init; }
-    public required string Name { get; init; }
-    public string? Notes { get; init; }
+    public Guid ProjectId { get; set; }
+    public required string Name { get; set; }
+    public string? Notes { get; set; }
     public string Status { get; set; } = "Rascunho";
     public DateTimeOffset CreatedAt { get; init; }
 }

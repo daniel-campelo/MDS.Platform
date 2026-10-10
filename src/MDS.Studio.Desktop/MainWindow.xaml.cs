@@ -285,23 +285,49 @@ public partial class MainWindow : Window
             PatternsStatusText.Text = "Escolha um molde antes de atualizar a situação.";
             return;
         }
+        if (ExistingPatternProjectSelector.SelectedItem is not StudioProject project)
+        {
+            PatternsStatusText.Text = "Escolha o projeto do molde.";
+            return;
+        }
+        var name = ExistingPatternNameInput.Text.Trim();
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            PatternsStatusText.Text = "Informe o nome do molde.";
+            return;
+        }
 
         try
         {
-            var response = await studioClient.PutAsJsonAsync($"patterns/{pattern.PatternId}", new UpdatePatternStatusRequest(SelectedContent(ExistingPatternStatusInput, "Rascunho")));
+            var response = await studioClient.PutAsJsonAsync($"patterns/{pattern.PatternId}", new UpdatePatternRequest(project.ProjectId, name, ExistingPatternNotesInput.Text.Trim(), SelectedContent(ExistingPatternStatusInput, "Rascunho")));
             if (!response.IsSuccessStatusCode)
             {
                 PatternsStatusText.Text = $"Não foi possível atualizar o molde (resposta {(int)response.StatusCode}).";
                 return;
             }
 
-            PatternsStatusText.Text = "Situação do molde atualizada.";
+            PatternsStatusText.Text = "Molde atualizado.";
             await RefreshPatternsAsync();
         }
         catch (HttpRequestException)
         {
             PatternsStatusText.Text = "Não foi possível alcançar a API do Studio.";
         }
+    }
+
+    private void ExistingPatternSelector_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (ExistingPatternSelector.SelectedItem is not StudioPattern pattern) return;
+        ExistingPatternNameInput.Text = pattern.Name;
+        ExistingPatternNotesInput.Text = pattern.Notes ?? string.Empty;
+        ExistingPatternStatusInput.SelectedIndex = pattern.Status switch
+        {
+            "Em revisão" => 1,
+            "Aprovado" => 2,
+            _ => 0
+        };
+        if (ExistingPatternProjectSelector.ItemsSource is IEnumerable<StudioProject> projects)
+            ExistingPatternProjectSelector.SelectedItem = projects.FirstOrDefault(project => project.ProjectId == pattern.ProjectId);
     }
 
     private async Task RefreshPatternProjectsAsync()
@@ -313,10 +339,13 @@ public partial class MainWindow : Window
                 ? await response.Content.ReadFromJsonAsync<StudioProject[]>() ?? []
                 : [];
             PatternProjectSelector.SelectedItem = null;
+            ExistingPatternProjectSelector.ItemsSource = PatternProjectSelector.ItemsSource;
+            ExistingPatternProjectSelector.SelectedItem = null;
         }
         catch (HttpRequestException)
         {
             PatternProjectSelector.ItemsSource = null;
+            ExistingPatternProjectSelector.ItemsSource = null;
         }
     }
 
@@ -818,7 +847,7 @@ public partial class MainWindow : Window
     private sealed record LibraryItem(Guid AssetId, string OriginalName, string ContentType, string LocalPath, Guid? ProjectId, string? ProjectName, DateTimeOffset CreatedAt);
     private sealed record CreatePatternRequest(Guid ProjectId, string Name, string? Notes, string Status);
     private sealed record StudioPattern(Guid PatternId, string Name, string? Notes, string Status, Guid ProjectId, string ProjectName, DateTimeOffset CreatedAt);
-    private sealed record UpdatePatternStatusRequest(string Status);
+    private sealed record UpdatePatternRequest(Guid ProjectId, string Name, string? Notes, string Status);
     private sealed record StudioProject(Guid ProjectId, string Name, string LocalPath, string? Description, string Status, DateTimeOffset CreatedAt);
     private sealed record UpdateProjectRequest(string Name, string LocalPath, string? Description, string Status);
     private sealed record CreateProjectOrganizationItemRequest(string Title, string? Notes, string Status);
