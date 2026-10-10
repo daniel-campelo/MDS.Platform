@@ -1,9 +1,11 @@
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 #nullable disable
 
 namespace MDS.Studio.Infrastructure.Migrations;
 
+[DbContext(typeof(StudioDbContext))]
 [Migration("202610090004_AddStudioProjects")]
 public partial class AddStudioProjects : Migration
 {
