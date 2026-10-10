@@ -79,6 +79,24 @@ app.MapHealthChecks("/health");
 app.MapGet("/version", (IHostEnvironment env) => Results.Ok(new { product = "MDS Studio API", version = "0.0.1", environment = env.EnvironmentName }));
 app.MapGet("/me", (ClaimsPrincipal user) => Results.Ok(new { id = user.FindFirstValue(ClaimTypes.NameIdentifier), name = user.Identity?.Name, permissions = user.FindAll("permission").Select(x => x.Value) })).RequireAuthorization(Permissions.StudioAccess);
 app.MapGet("/diagnostics", (IHostEnvironment env) => Results.Ok(new { environment = env.EnvironmentName, api = "0.0.1" })).RequireAuthorization(Permissions.AdminDiagnostics);
+app.MapGet("/library", async (StudioDbContext db, CancellationToken ct) => Results.Ok(await db.FileAssets
+    .Where(x => x.LocalPath != null)
+    .OrderBy(x => x.OriginalName)
+    .Select(x => new { assetId = x.Id, x.OriginalName, x.ContentType, x.LocalPath, x.CreatedAt })
+    .ToListAsync(ct))).RequireAuthorization(Permissions.StudioAccess);
+app.MapPost("/library", async (CreateLibraryItemRequest request, StudioDbContext db, CancellationToken ct) =>
+{
+    var name = request.Name?.Trim();
+    var type = request.Type?.Trim();
+    var localPath = request.LocalPath?.Trim();
+    if (string.IsNullOrWhiteSpace(name) || name.Length > 260 || string.IsNullOrWhiteSpace(type) || type.Length > 80 || string.IsNullOrWhiteSpace(localPath) || localPath.Length > 1024)
+        return Results.BadRequest(new { code = "MDS-STUDIO-LIBRARY-001", message = "Library name, type and local path are required." });
+    if (await db.FileAssets.AnyAsync(x => x.LocalPath == localPath, ct))
+        return Results.Conflict(new { code = "MDS-STUDIO-LIBRARY-001", message = "A library item already uses this local path." });
+    var asset = new FileAsset { OriginalName = name, ContentType = type, LocalPath = localPath, SizeBytes = 0, Status = FileAssetStatus.Available, CreatedAt = DateTimeOffset.UtcNow };
+    db.FileAssets.Add(asset); await db.SaveChangesAsync(ct);
+    return Results.Created($"/library/{asset.Id}", new { assetId = asset.Id, asset.OriginalName, asset.ContentType, asset.LocalPath, asset.CreatedAt });
+}).RequireAuthorization(Permissions.StudioAccess);
 app.MapGet("/projects", async (StudioDbContext db, CancellationToken ct) => Results.Ok(await db.Projects.OrderBy(x => x.Name).Select(x => new { projectId = x.Id, x.Name, x.LocalPath, x.Description, x.Status, x.CreatedAt }).ToListAsync(ct))).RequireAuthorization(Permissions.StudioAccess);
 app.MapPost("/projects", async (CreateProjectRequest request, ClaimsPrincipal user, StudioDbContext db, CancellationToken ct) =>
 {
@@ -213,6 +231,7 @@ app.Run();
 
 public partial class Program { }
 public sealed record CreateProjectRequest(string? Name, string? LocalPath);
+public sealed record CreateLibraryItemRequest(string? Name, string? Type, string? LocalPath);
 public sealed record UpdateProjectRequest(string? Name, string? LocalPath, string? Description, string Status);
 public sealed record CreateProjectOrganizationItemRequest(string? Title, string? Notes, string Status);
 public sealed record UpdateProjectOrganizationItemRequest(string Status);

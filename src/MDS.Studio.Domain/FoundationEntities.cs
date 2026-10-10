@@ -31,6 +31,7 @@ public sealed class FileAsset
     public Guid Id { get; init; } = Guid.NewGuid();
     public required string OriginalName { get; init; }
     public required string ContentType { get; init; }
+    public string? LocalPath { get; init; }
     public long SizeBytes { get; init; }
     public string? Sha256 { get; set; }
     public FileAssetStatus Status { get; set; } = FileAssetStatus.Pending;

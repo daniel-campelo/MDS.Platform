@@ -82,6 +82,7 @@ public partial class MainWindow : Window
             SessionPanel.Visibility = Visibility.Collapsed;
             ProjectsPanel.Visibility = Visibility.Collapsed;
             ProjectDetailsPanel.Visibility = Visibility.Collapsed;
+            LibraryPanel.Visibility = Visibility.Collapsed;
             currentProjectId = null;
             DiagnosticsPanel.Visibility = Visibility.Collapsed;
             HomePanel.Visibility = Visibility.Visible;
@@ -147,6 +148,7 @@ public partial class MainWindow : Window
         DiagnosticsPanel.Visibility = Visibility.Collapsed;
         ProjectsPanel.Visibility = Visibility.Collapsed;
         ProjectDetailsPanel.Visibility = Visibility.Collapsed;
+        LibraryPanel.Visibility = Visibility.Collapsed;
         currentProjectId = null;
         HomePanel.Visibility = Visibility.Visible;
     }
@@ -163,6 +165,7 @@ public partial class MainWindow : Window
 
         HomePanel.Visibility = Visibility.Collapsed;
         ProjectsPanel.Visibility = Visibility.Collapsed;
+        LibraryPanel.Visibility = Visibility.Collapsed;
         DiagnosticsPanel.Visibility = Visibility.Visible;
         await RefreshDiagnosticsAsync();
     }
@@ -181,6 +184,7 @@ public partial class MainWindow : Window
 
         HomePanel.Visibility = Visibility.Collapsed;
         DiagnosticsPanel.Visibility = Visibility.Collapsed;
+        LibraryPanel.Visibility = Visibility.Collapsed;
         ProjectsPanel.Visibility = Visibility.Visible;
         ProjectDetailsPanel.Visibility = Visibility.Collapsed;
         currentProjectId = null;
@@ -188,6 +192,82 @@ public partial class MainWindow : Window
     }
 
     private async void RefreshProjects_Click(object sender, RoutedEventArgs e) => await RefreshProjectsAsync();
+
+    private async void Library_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(sessionToken))
+        {
+            StatusText.Text = "Entre com sua conta do MDS Core antes de consultar a biblioteca.";
+            HomePanel.Visibility = Visibility.Visible;
+            LibraryPanel.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        HomePanel.Visibility = Visibility.Collapsed;
+        DiagnosticsPanel.Visibility = Visibility.Collapsed;
+        ProjectsPanel.Visibility = Visibility.Collapsed;
+        ProjectDetailsPanel.Visibility = Visibility.Collapsed;
+        LibraryPanel.Visibility = Visibility.Visible;
+        await RefreshLibraryAsync();
+    }
+
+    private async void RefreshLibrary_Click(object sender, RoutedEventArgs e) => await RefreshLibraryAsync();
+
+    private async void CreateLibraryItem_Click(object sender, RoutedEventArgs e)
+    {
+        var name = LibraryNameInput.Text.Trim();
+        var localPath = LibraryPathInput.Text.Trim();
+        if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(localPath))
+        {
+            LibraryStatusText.Text = "Informe o nome e o caminho local da referência.";
+            return;
+        }
+
+        try
+        {
+            var response = await studioClient.PostAsJsonAsync("library", new CreateLibraryItemRequest(name, SelectedContent(LibraryTypeInput, "Referência"), localPath));
+            if (!response.IsSuccessStatusCode)
+            {
+                LibraryStatusText.Text = $"Não foi possível adicionar a referência (resposta {(int)response.StatusCode}). O caminho talvez já esteja cadastrado.";
+                return;
+            }
+
+            LibraryNameInput.Clear();
+            LibraryPathInput.Clear();
+            LibraryTypeInput.SelectedIndex = 0;
+            LibraryStatusText.Text = "Referência adicionada à biblioteca.";
+            await RefreshLibraryAsync();
+        }
+        catch (HttpRequestException)
+        {
+            LibraryStatusText.Text = "Não foi possível alcançar a API do Studio.";
+        }
+    }
+
+    private async Task RefreshLibraryAsync()
+    {
+        try
+        {
+            var response = await studioClient.GetAsync("library");
+            if (!response.IsSuccessStatusCode)
+            {
+                LibraryListText.Text = "A biblioteca não está disponível.";
+                LibraryStatusText.Text = $"O Studio recusou a consulta (resposta {(int)response.StatusCode}).";
+                return;
+            }
+
+            var items = await response.Content.ReadFromJsonAsync<LibraryItem[]>() ?? [];
+            LibraryListText.Text = items.Length == 0
+                ? "Nenhuma referência cadastrada ainda."
+                : string.Join(Environment.NewLine, items.Select(item => $"{item.OriginalName} · {item.ContentType} — {item.LocalPath}"));
+            LibraryStatusText.Text = items.Length == 0 ? "Lista atualizada." : $"{items.Length} referência(s) cadastrada(s).";
+        }
+        catch (HttpRequestException)
+        {
+            LibraryListText.Text = "A biblioteca não está disponível.";
+            LibraryStatusText.Text = "Não foi possível alcançar a API do Studio.";
+        }
+    }
 
     private async void CreateProject_Click(object sender, RoutedEventArgs e)
     {
@@ -476,6 +556,8 @@ public partial class MainWindow : Window
     private sealed record StudioAgent(string MachineName, bool IsAuthorized);
     private sealed record StudioDiagnostics(string? Environment, string? Api);
     private sealed record CreateProjectRequest(string Name, string LocalPath);
+    private sealed record CreateLibraryItemRequest(string Name, string Type, string LocalPath);
+    private sealed record LibraryItem(Guid AssetId, string OriginalName, string ContentType, string LocalPath, DateTimeOffset CreatedAt);
     private sealed record StudioProject(Guid ProjectId, string Name, string LocalPath, string? Description, string Status, DateTimeOffset CreatedAt);
     private sealed record UpdateProjectRequest(string Name, string LocalPath, string? Description, string Status);
     private sealed record CreateProjectOrganizationItemRequest(string Title, string? Notes, string Status);
