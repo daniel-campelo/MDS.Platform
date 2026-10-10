@@ -26,6 +26,16 @@ public sealed class ProjectOrganizationItem
     public DateTimeOffset CreatedAt { get; init; }
 }
 
+public sealed class StudioPattern
+{
+    public Guid Id { get; init; } = Guid.NewGuid();
+    public Guid ProjectId { get; init; }
+    public required string Name { get; init; }
+    public string? Notes { get; init; }
+    public string Status { get; init; } = "Rascunho";
+    public DateTimeOffset CreatedAt { get; init; }
+}
+
 public sealed class FileAsset
 {
     public Guid Id { get; init; } = Guid.NewGuid();

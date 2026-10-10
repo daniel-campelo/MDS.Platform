@@ -112,6 +112,24 @@ app.MapPut("/library/{assetId:guid}", async (Guid assetId, UpdateLibraryItemRequ
     await db.SaveChangesAsync(ct);
     return Results.Ok(new { assetId = asset.Id, asset.OriginalName, asset.ProjectId });
 }).RequireAuthorization(Permissions.StudioAccess);
+app.MapGet("/patterns", async (StudioDbContext db, CancellationToken ct) => Results.Ok(await (
+    from pattern in db.Patterns
+    join project in db.Projects on pattern.ProjectId equals project.Id
+    orderby pattern.Name
+    select new { patternId = pattern.Id, pattern.Name, pattern.Notes, pattern.Status, pattern.ProjectId, projectName = project.Name, pattern.CreatedAt }
+).ToListAsync(ct))).RequireAuthorization(Permissions.StudioAccess);
+app.MapPost("/patterns", async (CreatePatternRequest request, StudioDbContext db, CancellationToken ct) =>
+{
+    var name = request.Name?.Trim();
+    var notes = request.Notes?.Trim();
+    if (request.ProjectId == Guid.Empty || string.IsNullOrWhiteSpace(name) || name.Length > 160 || notes?.Length > 2000 || !PatternRules.Statuses.Contains(request.Status))
+        return Results.BadRequest(new { code = "MDS-STUDIO-PATTERN-001", message = "Pattern details are invalid." });
+    if (!await db.Projects.AnyAsync(x => x.Id == request.ProjectId, ct))
+        return Results.BadRequest(new { code = "MDS-STUDIO-PATTERN-001", message = "The selected project does not exist." });
+    var pattern = new StudioPattern { ProjectId = request.ProjectId, Name = name, Notes = notes, Status = request.Status, CreatedAt = DateTimeOffset.UtcNow };
+    db.Patterns.Add(pattern); await db.SaveChangesAsync(ct);
+    return Results.Created($"/patterns/{pattern.Id}", new { patternId = pattern.Id, pattern.Name, pattern.Notes, pattern.Status, pattern.ProjectId, pattern.CreatedAt });
+}).RequireAuthorization(Permissions.StudioAccess);
 app.MapGet("/projects", async (StudioDbContext db, CancellationToken ct) => Results.Ok(await db.Projects.OrderBy(x => x.Name).Select(x => new { projectId = x.Id, x.Name, x.LocalPath, x.Description, x.Status, x.CreatedAt }).ToListAsync(ct))).RequireAuthorization(Permissions.StudioAccess);
 app.MapPost("/projects", async (CreateProjectRequest request, ClaimsPrincipal user, StudioDbContext db, CancellationToken ct) =>
 {
@@ -248,6 +266,7 @@ public partial class Program { }
 public sealed record CreateProjectRequest(string? Name, string? LocalPath);
 public sealed record CreateLibraryItemRequest(string? Name, string? Type, string? LocalPath, Guid? ProjectId);
 public sealed record UpdateLibraryItemRequest(Guid? ProjectId);
+public sealed record CreatePatternRequest(Guid ProjectId, string? Name, string? Notes, string Status);
 public sealed record UpdateProjectRequest(string? Name, string? LocalPath, string? Description, string Status);
 public sealed record CreateProjectOrganizationItemRequest(string? Title, string? Notes, string Status);
 public sealed record UpdateProjectOrganizationItemRequest(string Status);
@@ -255,6 +274,10 @@ public static class ProjectOrganizationRules
 {
     public static readonly HashSet<string> ProjectStatuses = ["Ativo", "Em espera", "Concluído"];
     public static readonly HashSet<string> OrganizationStatuses = ["Pendente", "Em andamento", "Concluído"];
+}
+public static class PatternRules
+{
+    public static readonly HashSet<string> Statuses = ["Rascunho", "Em revisão", "Aprovado"];
 }
 public sealed class SharedIdentityOptions
 {

@@ -83,6 +83,7 @@ public partial class MainWindow : Window
             ProjectsPanel.Visibility = Visibility.Collapsed;
             ProjectDetailsPanel.Visibility = Visibility.Collapsed;
             LibraryPanel.Visibility = Visibility.Collapsed;
+            PatternsPanel.Visibility = Visibility.Collapsed;
             currentProjectId = null;
             DiagnosticsPanel.Visibility = Visibility.Collapsed;
             HomePanel.Visibility = Visibility.Visible;
@@ -149,6 +150,7 @@ public partial class MainWindow : Window
         ProjectsPanel.Visibility = Visibility.Collapsed;
         ProjectDetailsPanel.Visibility = Visibility.Collapsed;
         LibraryPanel.Visibility = Visibility.Collapsed;
+        PatternsPanel.Visibility = Visibility.Collapsed;
         currentProjectId = null;
         HomePanel.Visibility = Visibility.Visible;
     }
@@ -166,6 +168,7 @@ public partial class MainWindow : Window
         HomePanel.Visibility = Visibility.Collapsed;
         ProjectsPanel.Visibility = Visibility.Collapsed;
         LibraryPanel.Visibility = Visibility.Collapsed;
+        PatternsPanel.Visibility = Visibility.Collapsed;
         DiagnosticsPanel.Visibility = Visibility.Visible;
         await RefreshDiagnosticsAsync();
     }
@@ -185,6 +188,7 @@ public partial class MainWindow : Window
         HomePanel.Visibility = Visibility.Collapsed;
         DiagnosticsPanel.Visibility = Visibility.Collapsed;
         LibraryPanel.Visibility = Visibility.Collapsed;
+        PatternsPanel.Visibility = Visibility.Collapsed;
         ProjectsPanel.Visibility = Visibility.Visible;
         ProjectDetailsPanel.Visibility = Visibility.Collapsed;
         currentProjectId = null;
@@ -208,11 +212,112 @@ public partial class MainWindow : Window
         ProjectsPanel.Visibility = Visibility.Collapsed;
         ProjectDetailsPanel.Visibility = Visibility.Collapsed;
         LibraryPanel.Visibility = Visibility.Visible;
+        PatternsPanel.Visibility = Visibility.Collapsed;
         await RefreshLibraryProjectsAsync();
         await RefreshLibraryAsync();
     }
 
     private async void RefreshLibrary_Click(object sender, RoutedEventArgs e) => await RefreshLibraryAsync();
+
+    private async void Patterns_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(sessionToken))
+        {
+            StatusText.Text = "Entre com sua conta do MDS Core antes de consultar os moldes.";
+            HomePanel.Visibility = Visibility.Visible;
+            PatternsPanel.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        HomePanel.Visibility = Visibility.Collapsed;
+        DiagnosticsPanel.Visibility = Visibility.Collapsed;
+        ProjectsPanel.Visibility = Visibility.Collapsed;
+        ProjectDetailsPanel.Visibility = Visibility.Collapsed;
+        LibraryPanel.Visibility = Visibility.Collapsed;
+        PatternsPanel.Visibility = Visibility.Visible;
+        await RefreshPatternProjectsAsync();
+        await RefreshPatternsAsync();
+    }
+
+    private async void RefreshPatterns_Click(object sender, RoutedEventArgs e) => await RefreshPatternsAsync();
+
+    private async void CreatePattern_Click(object sender, RoutedEventArgs e)
+    {
+        if (PatternProjectSelector.SelectedItem is not StudioProject project)
+        {
+            PatternsStatusText.Text = "Escolha o projeto do molde.";
+            return;
+        }
+
+        var name = PatternNameInput.Text.Trim();
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            PatternsStatusText.Text = "Informe o nome do molde.";
+            return;
+        }
+
+        try
+        {
+            var response = await studioClient.PostAsJsonAsync("patterns", new CreatePatternRequest(project.ProjectId, name, PatternNotesInput.Text.Trim(), SelectedContent(PatternStatusInput, "Rascunho")));
+            if (!response.IsSuccessStatusCode)
+            {
+                PatternsStatusText.Text = $"Não foi possível registrar o molde (resposta {(int)response.StatusCode}).";
+                return;
+            }
+
+            PatternNameInput.Clear();
+            PatternNotesInput.Clear();
+            PatternStatusInput.SelectedIndex = 0;
+            PatternProjectSelector.SelectedItem = null;
+            PatternsStatusText.Text = "Molde registrado.";
+            await RefreshPatternsAsync();
+        }
+        catch (HttpRequestException)
+        {
+            PatternsStatusText.Text = "Não foi possível alcançar a API do Studio.";
+        }
+    }
+
+    private async Task RefreshPatternProjectsAsync()
+    {
+        try
+        {
+            var response = await studioClient.GetAsync("projects");
+            PatternProjectSelector.ItemsSource = response.IsSuccessStatusCode
+                ? await response.Content.ReadFromJsonAsync<StudioProject[]>() ?? []
+                : [];
+            PatternProjectSelector.SelectedItem = null;
+        }
+        catch (HttpRequestException)
+        {
+            PatternProjectSelector.ItemsSource = null;
+        }
+    }
+
+    private async Task RefreshPatternsAsync()
+    {
+        try
+        {
+            var response = await studioClient.GetAsync("patterns");
+            if (!response.IsSuccessStatusCode)
+            {
+                PatternsListText.Text = "A lista de moldes não está disponível.";
+                PatternsStatusText.Text = $"O Studio recusou a consulta (resposta {(int)response.StatusCode}).";
+                return;
+            }
+
+            var patterns = await response.Content.ReadFromJsonAsync<StudioPattern[]>() ?? [];
+            PatternsListText.Text = patterns.Length == 0
+                ? "Nenhum molde registrado ainda."
+                : string.Join(Environment.NewLine + Environment.NewLine, patterns.Select(pattern => $"{pattern.Name} · {pattern.Status} · Projeto: {pattern.ProjectName}{(string.IsNullOrWhiteSpace(pattern.Notes) ? string.Empty : Environment.NewLine + pattern.Notes)}"));
+            PatternsStatusText.Text = patterns.Length == 0 ? "Lista atualizada." : $"{patterns.Length} molde(s) registrado(s).";
+        }
+        catch (HttpRequestException)
+        {
+            PatternsListText.Text = "A lista de moldes não está disponível.";
+            PatternsStatusText.Text = "Não foi possível alcançar a API do Studio.";
+        }
+    }
 
     private async void CreateLibraryItem_Click(object sender, RoutedEventArgs e)
     {
@@ -611,6 +716,8 @@ public partial class MainWindow : Window
     private sealed record CreateLibraryItemRequest(string Name, string Type, string LocalPath, Guid? ProjectId);
     private sealed record UpdateLibraryItemRequest(Guid? ProjectId);
     private sealed record LibraryItem(Guid AssetId, string OriginalName, string ContentType, string LocalPath, Guid? ProjectId, string? ProjectName, DateTimeOffset CreatedAt);
+    private sealed record CreatePatternRequest(Guid ProjectId, string Name, string? Notes, string Status);
+    private sealed record StudioPattern(Guid PatternId, string Name, string? Notes, string Status, Guid ProjectId, string ProjectName, DateTimeOffset CreatedAt);
     private sealed record StudioProject(Guid ProjectId, string Name, string LocalPath, string? Description, string Status, DateTimeOffset CreatedAt);
     private sealed record UpdateProjectRequest(string Name, string LocalPath, string? Description, string Status);
     private sealed record CreateProjectOrganizationItemRequest(string Title, string? Notes, string Status);
