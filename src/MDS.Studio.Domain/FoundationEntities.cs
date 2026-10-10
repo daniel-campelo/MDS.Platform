@@ -5,6 +5,15 @@ namespace MDS.Studio.Domain;
 public enum FileAssetStatus { Pending, Available, Archived }
 public enum JobStatus { Queued, Running, Completed, Failed, Cancelled }
 
+public sealed class StudioProject
+{
+    public Guid Id { get; init; } = Guid.NewGuid();
+    public required string Name { get; init; }
+    public required string LocalPath { get; init; }
+    public required string CreatedByUserId { get; init; }
+    public DateTimeOffset CreatedAt { get; init; }
+}
+
 public sealed class FileAsset
 {
     public Guid Id { get; init; } = Guid.NewGuid();

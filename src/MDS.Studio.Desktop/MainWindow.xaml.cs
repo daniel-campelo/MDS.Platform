@@ -79,6 +79,9 @@ public partial class MainWindow : Window
             coreClient.DefaultRequestHeaders.Authorization = null;
             studioClient.DefaultRequestHeaders.Authorization = null;
             SessionPanel.Visibility = Visibility.Collapsed;
+            ProjectsPanel.Visibility = Visibility.Collapsed;
+            DiagnosticsPanel.Visibility = Visibility.Collapsed;
+            HomePanel.Visibility = Visibility.Visible;
             LoginPanel.Visibility = Visibility.Visible;
             StatusText.Text = "Sessão encerrada.";
         }
@@ -139,6 +142,7 @@ public partial class MainWindow : Window
     private void Home_Click(object sender, RoutedEventArgs e)
     {
         DiagnosticsPanel.Visibility = Visibility.Collapsed;
+        ProjectsPanel.Visibility = Visibility.Collapsed;
         HomePanel.Visibility = Visibility.Visible;
     }
 
@@ -153,11 +157,85 @@ public partial class MainWindow : Window
         }
 
         HomePanel.Visibility = Visibility.Collapsed;
+        ProjectsPanel.Visibility = Visibility.Collapsed;
         DiagnosticsPanel.Visibility = Visibility.Visible;
         await RefreshDiagnosticsAsync();
     }
 
     private async void RefreshDiagnostics_Click(object sender, RoutedEventArgs e) => await RefreshDiagnosticsAsync();
+
+    private async void Projects_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(sessionToken))
+        {
+            StatusText.Text = "Entre com sua conta do MDS Core antes de consultar os projetos.";
+            HomePanel.Visibility = Visibility.Visible;
+            ProjectsPanel.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        HomePanel.Visibility = Visibility.Collapsed;
+        DiagnosticsPanel.Visibility = Visibility.Collapsed;
+        ProjectsPanel.Visibility = Visibility.Visible;
+        await RefreshProjectsAsync();
+    }
+
+    private async void RefreshProjects_Click(object sender, RoutedEventArgs e) => await RefreshProjectsAsync();
+
+    private async void CreateProject_Click(object sender, RoutedEventArgs e)
+    {
+        var name = ProjectNameInput.Text.Trim();
+        var localPath = ProjectPathInput.Text.Trim();
+        if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(localPath))
+        {
+            ProjectsStatusText.Text = "Informe o nome e a pasta local do projeto.";
+            return;
+        }
+
+        try
+        {
+            var response = await studioClient.PostAsJsonAsync("projects", new CreateProjectRequest(name, localPath));
+            if (!response.IsSuccessStatusCode)
+            {
+                ProjectsStatusText.Text = $"Não foi possível criar o projeto (resposta {(int)response.StatusCode}). A pasta talvez já esteja cadastrada.";
+                return;
+            }
+
+            ProjectNameInput.Clear();
+            ProjectPathInput.Clear();
+            ProjectsStatusText.Text = "Projeto criado.";
+            await RefreshProjectsAsync();
+        }
+        catch (HttpRequestException)
+        {
+            ProjectsStatusText.Text = "Não foi possível alcançar a API do Studio.";
+        }
+    }
+
+    private async Task RefreshProjectsAsync()
+    {
+        try
+        {
+            var response = await studioClient.GetAsync("projects");
+            if (!response.IsSuccessStatusCode)
+            {
+                ProjectsListText.Text = "A lista de projetos não está disponível.";
+                ProjectsStatusText.Text = $"O Studio recusou a consulta (resposta {(int)response.StatusCode}).";
+                return;
+            }
+
+            var projects = await response.Content.ReadFromJsonAsync<StudioProject[]>() ?? [];
+            ProjectsListText.Text = projects.Length == 0
+                ? "Nenhum projeto cadastrado ainda."
+                : string.Join(Environment.NewLine, projects.Select(project => $"{project.Name} — {project.LocalPath}"));
+            ProjectsStatusText.Text = projects.Length == 0 ? "Lista atualizada." : $"{projects.Length} projeto(s) cadastrado(s).";
+        }
+        catch (HttpRequestException)
+        {
+            ProjectsListText.Text = "A lista de projetos não está disponível.";
+            ProjectsStatusText.Text = "Não foi possível alcançar a API do Studio.";
+        }
+    }
 
     private async Task RefreshDiagnosticsAsync()
     {
@@ -234,4 +312,6 @@ public partial class MainWindow : Window
     private sealed record StudioUser(string? Id);
     private sealed record StudioAgent(string MachineName, bool IsAuthorized);
     private sealed record StudioDiagnostics(string? Environment, string? Api);
+    private sealed record CreateProjectRequest(string Name, string LocalPath);
+    private sealed record StudioProject(Guid ProjectId, string Name, string LocalPath, DateTimeOffset CreatedAt);
 }

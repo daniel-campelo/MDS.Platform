@@ -2,7 +2,8 @@
  <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="190"/><ColumnDefinition/></Grid.ColumnDefinitions>
   <StackPanel Background="#17202A"><TextBlock Text="MDS STUDIO" Foreground="White" FontSize="20" Margin="20"/>
    <Button Content="Início" HorizontalContentAlignment="Left" Foreground="White" Background="Transparent" BorderThickness="0" FontSize="15" Padding="20,8" Click="Home_Click"/>
-   <TextBlock Text="Projetos&#x0a;Biblioteca&#x0a;Moldes" Foreground="#BFC9CA" FontSize="15" LineHeight="34" Margin="20,0"/>
+   <Button Content="Projetos" HorizontalContentAlignment="Left" Foreground="White" Background="Transparent" BorderThickness="0" FontSize="15" Padding="20,8" Click="Projects_Click"/>
+   <TextBlock Text="Biblioteca&#x0a;Moldes" Foreground="#BFC9CA" FontSize="15" LineHeight="34" Margin="20,0"/>
    <Button Content="Diagnóstico" HorizontalContentAlignment="Left" Foreground="White" Background="Transparent" BorderThickness="0" FontSize="15" Padding="20,8" Click="Diagnostics_Click"/>
    <TextBlock Text="Configurações" Foreground="#BFC9CA" FontSize="15" Margin="20,8"/>
   </StackPanel>
@@ -34,6 +35,16 @@
      <StackPanel Orientation="Horizontal" Margin="0,20,0,0"><Button Content="Atualizar diagnóstico" Padding="14,7" Click="RefreshDiagnostics_Click"/><Button Content="Voltar ao início" Margin="12,0,0,0" Padding="14,7" Click="Home_Click"/></StackPanel>
     </StackPanel></Border>
     <TextBlock x:Name="DiagnosticStatusText" Margin="0,18,0,0" TextWrapping="Wrap" Foreground="#34495E"/>
+   </StackPanel>
+   <StackPanel x:Name="ProjectsPanel" Visibility="Collapsed"><Border Background="#EAF2F8" Padding="12"><TextBlock Text="PROJETOS — HOMOLOGAÇÃO" FontWeight="Bold"/></Border>
+    <TextBlock Text="Projetos" FontSize="28" Margin="0,28,0,4"/><TextBlock Text="Cadastre um nome e a pasta local do projeto. Nenhum molde, produto ou dado de produção é criado nesta etapa." Foreground="Gray" TextWrapping="Wrap"/>
+    <Border Background="#F8F9F9" BorderBrush="#D5DBDB" BorderThickness="1" CornerRadius="6" Padding="20" Margin="0,28,0,0"><StackPanel>
+     <TextBlock Text="Novo projeto" FontSize="18" FontWeight="SemiBold"/><TextBlock Text="Nome" Margin="0,16,0,4"/><TextBox x:Name="ProjectNameInput" Padding="8" MaxLength="160"/>
+     <TextBlock Text="Pasta local" Margin="0,14,0,4"/><TextBox x:Name="ProjectPathInput" Padding="8" MaxLength="1024"/>
+     <StackPanel Orientation="Horizontal" Margin="0,20,0,0"><Button Content="Criar projeto" Padding="14,7" Click="CreateProject_Click"/><Button Content="Atualizar lista" Margin="12,0,0,0" Padding="14,7" Click="RefreshProjects_Click"/><Button Content="Voltar ao início" Margin="12,0,0,0" Padding="14,7" Click="Home_Click"/></StackPanel>
+    </StackPanel></Border>
+    <TextBlock Text="Projetos cadastrados" FontSize="18" FontWeight="SemiBold" Margin="0,26,0,8"/><Border Background="White" BorderBrush="#D5DBDB" BorderThickness="1" Padding="14"><TextBlock x:Name="ProjectsListText" TextWrapping="Wrap"/></Border>
+    <TextBlock x:Name="ProjectsStatusText" Margin="0,18,0,0" TextWrapping="Wrap" Foreground="#34495E"/>
    </StackPanel>
   </StackPanel></ScrollViewer>
  </Grid>

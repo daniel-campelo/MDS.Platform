@@ -79,6 +79,19 @@ app.MapHealthChecks("/health");
 app.MapGet("/version", (IHostEnvironment env) => Results.Ok(new { product = "MDS Studio API", version = "0.0.1", environment = env.EnvironmentName }));
 app.MapGet("/me", (ClaimsPrincipal user) => Results.Ok(new { id = user.FindFirstValue(ClaimTypes.NameIdentifier), name = user.Identity?.Name, permissions = user.FindAll("permission").Select(x => x.Value) })).RequireAuthorization(Permissions.StudioAccess);
 app.MapGet("/diagnostics", (IHostEnvironment env) => Results.Ok(new { environment = env.EnvironmentName, api = "0.0.1" })).RequireAuthorization(Permissions.AdminDiagnostics);
+app.MapGet("/projects", async (StudioDbContext db, CancellationToken ct) => Results.Ok(await db.Projects.OrderBy(x => x.Name).Select(x => new { projectId = x.Id, x.Name, x.LocalPath, x.CreatedAt }).ToListAsync(ct))).RequireAuthorization(Permissions.StudioAccess);
+app.MapPost("/projects", async (CreateProjectRequest request, ClaimsPrincipal user, StudioDbContext db, CancellationToken ct) =>
+{
+    var name = request.Name?.Trim();
+    var localPath = request.LocalPath?.Trim();
+    if (string.IsNullOrWhiteSpace(name) || name.Length > 160 || string.IsNullOrWhiteSpace(localPath) || localPath.Length > 1024)
+        return Results.BadRequest(new { code = "MDS-STUDIO-PROJECT-001", message = "Project name and local folder are required." });
+    if (await db.Projects.AnyAsync(x => x.LocalPath == localPath, ct))
+        return Results.Conflict(new { code = "MDS-STUDIO-PROJECT-001", message = "A project already uses this local folder." });
+    var project = new StudioProject { Name = name, LocalPath = localPath, CreatedByUserId = user.FindFirstValue(ClaimTypes.NameIdentifier) ?? "unknown", CreatedAt = DateTimeOffset.UtcNow };
+    db.Projects.Add(project); await db.SaveChangesAsync(ct);
+    return Results.Created($"/projects/{project.Id}", new { projectId = project.Id, project.Name, project.LocalPath, project.CreatedAt });
+}).RequireAuthorization(Permissions.StudioAccess);
 app.MapPost("/agents/enrollment-requests", async (EnrollmentRequest request, StudioDbContext db, CancellationToken ct) =>
 {
     if (string.IsNullOrWhiteSpace(request.MachineName) || string.IsNullOrWhiteSpace(request.AgentVersion))
@@ -156,6 +169,7 @@ app.MapPost("/agents/{agentId:guid}/jobs/{jobId:guid}/complete", async (Guid age
 app.Run();
 
 public partial class Program { }
+public sealed record CreateProjectRequest(string? Name, string? LocalPath);
 public sealed class SharedIdentityOptions
 {
     public const string SectionName = "Authentication";
