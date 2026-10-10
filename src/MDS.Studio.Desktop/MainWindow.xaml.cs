@@ -241,6 +241,8 @@ public partial class MainWindow : Window
 
     private async void RefreshPatterns_Click(object sender, RoutedEventArgs e) => await RefreshPatternsAsync();
 
+    private async void ApplyPatternFilters_Click(object sender, RoutedEventArgs e) => await RefreshPatternsAsync();
+
     private async void CreatePattern_Click(object sender, RoutedEventArgs e)
     {
         if (PatternProjectSelector.SelectedItem is not StudioProject project)
@@ -341,11 +343,14 @@ public partial class MainWindow : Window
             PatternProjectSelector.SelectedItem = null;
             ExistingPatternProjectSelector.ItemsSource = PatternProjectSelector.ItemsSource;
             ExistingPatternProjectSelector.SelectedItem = null;
+            PatternFilterProjectSelector.ItemsSource = PatternProjectSelector.ItemsSource;
+            PatternFilterProjectSelector.SelectedItem = null;
         }
         catch (HttpRequestException)
         {
             PatternProjectSelector.ItemsSource = null;
             ExistingPatternProjectSelector.ItemsSource = null;
+            PatternFilterProjectSelector.ItemsSource = null;
         }
     }
 
@@ -361,13 +366,21 @@ public partial class MainWindow : Window
                 return;
             }
 
-            var patterns = await response.Content.ReadFromJsonAsync<StudioPattern[]>() ?? [];
+            var allPatterns = await response.Content.ReadFromJsonAsync<StudioPattern[]>() ?? [];
+            var selectedProjectId = (PatternFilterProjectSelector.SelectedItem as StudioProject)?.ProjectId;
+            var selectedStatus = SelectedContent(PatternFilterStatusInput, "Todas");
+            var patterns = allPatterns
+                .Where(pattern => selectedProjectId is null || pattern.ProjectId == selectedProjectId)
+                .Where(pattern => selectedStatus == "Todas" || pattern.Status == selectedStatus)
+                .ToArray();
             ExistingPatternSelector.ItemsSource = patterns;
             ExistingPatternSelector.SelectedItem = null;
             PatternsListText.Text = patterns.Length == 0
                 ? "Nenhum molde registrado ainda."
                 : string.Join(Environment.NewLine + Environment.NewLine, patterns.Select(pattern => $"{pattern.Name} · {pattern.Status} · Projeto: {pattern.ProjectName}{(string.IsNullOrWhiteSpace(pattern.Notes) ? string.Empty : Environment.NewLine + pattern.Notes)}"));
-            PatternsStatusText.Text = patterns.Length == 0 ? "Lista atualizada." : $"{patterns.Length} molde(s) registrado(s).";
+            PatternsStatusText.Text = patterns.Length == 0
+                ? "Nenhum molde encontrado para os filtros escolhidos."
+                : $"{patterns.Length} de {allPatterns.Length} molde(s) exibido(s).";
         }
         catch (HttpRequestException)
         {
