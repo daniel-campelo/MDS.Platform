@@ -32,7 +32,7 @@ public sealed class FileAsset
     public required string OriginalName { get; init; }
     public required string ContentType { get; init; }
     public string? LocalPath { get; init; }
-    public Guid? ProjectId { get; init; }
+    public Guid? ProjectId { get; set; }
     public long SizeBytes { get; init; }
     public string? Sha256 { get; set; }
     public FileAssetStatus Status { get; set; } = FileAssetStatus.Pending;

@@ -247,6 +247,33 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void UpdateLibraryLink_Click(object sender, RoutedEventArgs e)
+    {
+        if (LibraryItemSelector.SelectedItem is not LibraryItem item)
+        {
+            LibraryStatusText.Text = "Escolha uma referência antes de alterar o vínculo.";
+            return;
+        }
+
+        try
+        {
+            var projectId = (LibraryExistingProjectSelector.SelectedItem as StudioProject)?.ProjectId;
+            var response = await studioClient.PutAsJsonAsync($"library/{item.AssetId}", new UpdateLibraryItemRequest(projectId));
+            if (!response.IsSuccessStatusCode)
+            {
+                LibraryStatusText.Text = $"Não foi possível salvar o vínculo (resposta {(int)response.StatusCode}).";
+                return;
+            }
+
+            LibraryStatusText.Text = "Vínculo da referência atualizado.";
+            await RefreshLibraryAsync();
+        }
+        catch (HttpRequestException)
+        {
+            LibraryStatusText.Text = "Não foi possível alcançar a API do Studio.";
+        }
+    }
+
     private async Task RefreshLibraryAsync()
     {
         try
@@ -260,6 +287,8 @@ public partial class MainWindow : Window
             }
 
             var items = await response.Content.ReadFromJsonAsync<LibraryItem[]>() ?? [];
+            LibraryItemSelector.ItemsSource = items;
+            LibraryItemSelector.SelectedItem = null;
             LibraryListText.Text = items.Length == 0
                 ? "Nenhuma referência cadastrada ainda."
                 : string.Join(Environment.NewLine, items.Select(item => $"{item.OriginalName} · {item.ContentType} — {item.LocalPath}{(string.IsNullOrWhiteSpace(item.ProjectName) ? " · Biblioteca geral" : $" · Projeto: {item.ProjectName}")}"));
@@ -268,6 +297,7 @@ public partial class MainWindow : Window
         catch (HttpRequestException)
         {
             LibraryListText.Text = "A biblioteca não está disponível.";
+            LibraryItemSelector.ItemsSource = null;
             LibraryStatusText.Text = "Não foi possível alcançar a API do Studio.";
         }
     }
@@ -281,10 +311,13 @@ public partial class MainWindow : Window
                 ? await response.Content.ReadFromJsonAsync<StudioProject[]>() ?? []
                 : [];
             LibraryProjectSelector.SelectedItem = null;
+            LibraryExistingProjectSelector.ItemsSource = LibraryProjectSelector.ItemsSource;
+            LibraryExistingProjectSelector.SelectedItem = null;
         }
         catch (HttpRequestException)
         {
             LibraryProjectSelector.ItemsSource = null;
+            LibraryExistingProjectSelector.ItemsSource = null;
         }
     }
 
@@ -576,6 +609,7 @@ public partial class MainWindow : Window
     private sealed record StudioDiagnostics(string? Environment, string? Api);
     private sealed record CreateProjectRequest(string Name, string LocalPath);
     private sealed record CreateLibraryItemRequest(string Name, string Type, string LocalPath, Guid? ProjectId);
+    private sealed record UpdateLibraryItemRequest(Guid? ProjectId);
     private sealed record LibraryItem(Guid AssetId, string OriginalName, string ContentType, string LocalPath, Guid? ProjectId, string? ProjectName, DateTimeOffset CreatedAt);
     private sealed record StudioProject(Guid ProjectId, string Name, string LocalPath, string? Description, string Status, DateTimeOffset CreatedAt);
     private sealed record UpdateProjectRequest(string Name, string LocalPath, string? Description, string Status);

@@ -102,6 +102,16 @@ app.MapPost("/library", async (CreateLibraryItemRequest request, StudioDbContext
     db.FileAssets.Add(asset); await db.SaveChangesAsync(ct);
     return Results.Created($"/library/{asset.Id}", new { assetId = asset.Id, asset.OriginalName, asset.ContentType, asset.LocalPath, asset.ProjectId, asset.CreatedAt });
 }).RequireAuthorization(Permissions.StudioAccess);
+app.MapPut("/library/{assetId:guid}", async (Guid assetId, UpdateLibraryItemRequest request, StudioDbContext db, CancellationToken ct) =>
+{
+    var asset = await db.FileAssets.FindAsync([assetId], ct);
+    if (asset is null || asset.LocalPath is null) return Results.NotFound(new { code = "MDS-STUDIO-LIBRARY-001", message = "Library item not found." });
+    if (request.ProjectId is not null && !await db.Projects.AnyAsync(x => x.Id == request.ProjectId, ct))
+        return Results.BadRequest(new { code = "MDS-STUDIO-LIBRARY-001", message = "The selected project does not exist." });
+    asset.ProjectId = request.ProjectId;
+    await db.SaveChangesAsync(ct);
+    return Results.Ok(new { assetId = asset.Id, asset.OriginalName, asset.ProjectId });
+}).RequireAuthorization(Permissions.StudioAccess);
 app.MapGet("/projects", async (StudioDbContext db, CancellationToken ct) => Results.Ok(await db.Projects.OrderBy(x => x.Name).Select(x => new { projectId = x.Id, x.Name, x.LocalPath, x.Description, x.Status, x.CreatedAt }).ToListAsync(ct))).RequireAuthorization(Permissions.StudioAccess);
 app.MapPost("/projects", async (CreateProjectRequest request, ClaimsPrincipal user, StudioDbContext db, CancellationToken ct) =>
 {
@@ -237,6 +247,7 @@ app.Run();
 public partial class Program { }
 public sealed record CreateProjectRequest(string? Name, string? LocalPath);
 public sealed record CreateLibraryItemRequest(string? Name, string? Type, string? LocalPath, Guid? ProjectId);
+public sealed record UpdateLibraryItemRequest(Guid? ProjectId);
 public sealed record UpdateProjectRequest(string? Name, string? LocalPath, string? Description, string Status);
 public sealed record CreateProjectOrganizationItemRequest(string? Title, string? Notes, string Status);
 public sealed record UpdateProjectOrganizationItemRequest(string Status);
