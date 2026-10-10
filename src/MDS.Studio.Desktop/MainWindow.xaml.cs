@@ -11,6 +11,7 @@ public partial class MainWindow : Window
     private readonly HttpClient studioClient = new();
     private string? sessionToken;
     private string? currentUsername;
+    private Guid? currentProjectId;
 
     public MainWindow() => InitializeComponent();
 
@@ -80,6 +81,8 @@ public partial class MainWindow : Window
             studioClient.DefaultRequestHeaders.Authorization = null;
             SessionPanel.Visibility = Visibility.Collapsed;
             ProjectsPanel.Visibility = Visibility.Collapsed;
+            ProjectDetailsPanel.Visibility = Visibility.Collapsed;
+            currentProjectId = null;
             DiagnosticsPanel.Visibility = Visibility.Collapsed;
             HomePanel.Visibility = Visibility.Visible;
             LoginPanel.Visibility = Visibility.Visible;
@@ -143,6 +146,8 @@ public partial class MainWindow : Window
     {
         DiagnosticsPanel.Visibility = Visibility.Collapsed;
         ProjectsPanel.Visibility = Visibility.Collapsed;
+        ProjectDetailsPanel.Visibility = Visibility.Collapsed;
+        currentProjectId = null;
         HomePanel.Visibility = Visibility.Visible;
     }
 
@@ -177,6 +182,8 @@ public partial class MainWindow : Window
         HomePanel.Visibility = Visibility.Collapsed;
         DiagnosticsPanel.Visibility = Visibility.Collapsed;
         ProjectsPanel.Visibility = Visibility.Visible;
+        ProjectDetailsPanel.Visibility = Visibility.Collapsed;
+        currentProjectId = null;
         await RefreshProjectsAsync();
     }
 
@@ -219,23 +226,150 @@ public partial class MainWindow : Window
             var response = await studioClient.GetAsync("projects");
             if (!response.IsSuccessStatusCode)
             {
-                ProjectsListText.Text = "A lista de projetos não está disponível.";
+                ProjectSelector.ItemsSource = null;
                 ProjectsStatusText.Text = $"O Studio recusou a consulta (resposta {(int)response.StatusCode}).";
                 return;
             }
 
             var projects = await response.Content.ReadFromJsonAsync<StudioProject[]>() ?? [];
-            ProjectsListText.Text = projects.Length == 0
-                ? "Nenhum projeto cadastrado ainda."
-                : string.Join(Environment.NewLine, projects.Select(project => $"{project.Name} — {project.LocalPath}"));
+            ProjectSelector.ItemsSource = projects;
+            ProjectSelector.SelectedItem = null;
             ProjectsStatusText.Text = projects.Length == 0 ? "Lista atualizada." : $"{projects.Length} projeto(s) cadastrado(s).";
         }
         catch (HttpRequestException)
         {
-            ProjectsListText.Text = "A lista de projetos não está disponível.";
+            ProjectSelector.ItemsSource = null;
             ProjectsStatusText.Text = "Não foi possível alcançar a API do Studio.";
         }
     }
+
+    private async void OpenProject_Click(object sender, RoutedEventArgs e)
+    {
+        if (ProjectSelector.SelectedItem is not StudioProject selected)
+        {
+            ProjectsStatusText.Text = "Escolha um projeto da lista primeiro.";
+            return;
+        }
+
+        try
+        {
+            var response = await studioClient.GetAsync($"projects/{selected.ProjectId}");
+            if (!response.IsSuccessStatusCode)
+            {
+                ProjectsStatusText.Text = $"Não foi possível abrir o projeto (resposta {(int)response.StatusCode}).";
+                return;
+            }
+
+            var project = await response.Content.ReadFromJsonAsync<StudioProject>();
+            if (project is null) return;
+            currentProjectId = project.ProjectId;
+            ProjectDetailsHeading.Text = project.Name;
+            ProjectDetailsNameInput.Text = project.Name;
+            ProjectDetailsPathInput.Text = project.LocalPath;
+            ProjectDescriptionInput.Text = project.Description ?? string.Empty;
+            SelectProjectStatus(project.Status);
+            ProjectDetailsPanel.Visibility = Visibility.Visible;
+            await RefreshOrganizationAsync();
+        }
+        catch (HttpRequestException)
+        {
+            ProjectsStatusText.Text = "Não foi possível alcançar a API do Studio.";
+        }
+    }
+
+    private async void SaveProjectDetails_Click(object sender, RoutedEventArgs e)
+    {
+        if (currentProjectId is null) return;
+        var name = ProjectDetailsNameInput.Text.Trim();
+        var path = ProjectDetailsPathInput.Text.Trim();
+        if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(path))
+        {
+            ProjectsStatusText.Text = "Nome e pasta local são obrigatórios.";
+            return;
+        }
+
+        try
+        {
+            var response = await studioClient.PutAsJsonAsync($"projects/{currentProjectId}", new UpdateProjectRequest(name, path, ProjectDescriptionInput.Text.Trim(), SelectedContent(ProjectStatusInput, "Ativo")));
+            if (!response.IsSuccessStatusCode)
+            {
+                ProjectsStatusText.Text = $"Não foi possível salvar os detalhes (resposta {(int)response.StatusCode}).";
+                return;
+            }
+
+            ProjectDetailsHeading.Text = name;
+            ProjectsStatusText.Text = "Detalhes salvos.";
+            await RefreshProjectsAsync();
+        }
+        catch (HttpRequestException)
+        {
+            ProjectsStatusText.Text = "Não foi possível alcançar a API do Studio.";
+        }
+    }
+
+    private async void AddOrganizationItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (currentProjectId is null) return;
+        var title = OrganizationTitleInput.Text.Trim();
+        if (string.IsNullOrWhiteSpace(title))
+        {
+            ProjectsStatusText.Text = "Informe o título do item interno.";
+            return;
+        }
+
+        try
+        {
+            var response = await studioClient.PostAsJsonAsync($"projects/{currentProjectId}/organization", new CreateProjectOrganizationItemRequest(title, OrganizationNotesInput.Text.Trim(), SelectedContent(OrganizationStatusInput, "Pendente")));
+            if (!response.IsSuccessStatusCode)
+            {
+                ProjectsStatusText.Text = $"Não foi possível adicionar o item (resposta {(int)response.StatusCode}).";
+                return;
+            }
+
+            OrganizationTitleInput.Clear();
+            OrganizationNotesInput.Clear();
+            OrganizationStatusInput.SelectedIndex = 0;
+            ProjectsStatusText.Text = "Item interno adicionado.";
+            await RefreshOrganizationAsync();
+        }
+        catch (HttpRequestException)
+        {
+            ProjectsStatusText.Text = "Não foi possível alcançar a API do Studio.";
+        }
+    }
+
+    private async Task RefreshOrganizationAsync()
+    {
+        if (currentProjectId is null) return;
+        try
+        {
+            var response = await studioClient.GetAsync($"projects/{currentProjectId}/organization");
+            if (!response.IsSuccessStatusCode)
+            {
+                OrganizationListText.Text = "Os itens internos não estão disponíveis.";
+                return;
+            }
+
+            var items = await response.Content.ReadFromJsonAsync<ProjectOrganizationItem[]>() ?? [];
+            OrganizationListText.Text = items.Length == 0
+                ? "Nenhum item interno registrado."
+                : string.Join(Environment.NewLine + Environment.NewLine, items.Select(item => $"{item.Title} · {item.Status}{(string.IsNullOrWhiteSpace(item.Notes) ? string.Empty : Environment.NewLine + item.Notes)}"));
+        }
+        catch (HttpRequestException)
+        {
+            OrganizationListText.Text = "Os itens internos não estão disponíveis.";
+        }
+    }
+
+    private void SelectProjectStatus(string status) => ProjectStatusInput.SelectedIndex = status switch
+    {
+        "Em espera" => 1,
+        "Concluído" => 2,
+        _ => 0
+    };
+
+    private static string SelectedContent(System.Windows.Controls.ComboBox comboBox, string fallback)
+        => (comboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Content?.ToString() ?? fallback;
 
     private async Task RefreshDiagnosticsAsync()
     {
@@ -313,5 +447,8 @@ public partial class MainWindow : Window
     private sealed record StudioAgent(string MachineName, bool IsAuthorized);
     private sealed record StudioDiagnostics(string? Environment, string? Api);
     private sealed record CreateProjectRequest(string Name, string LocalPath);
-    private sealed record StudioProject(Guid ProjectId, string Name, string LocalPath, DateTimeOffset CreatedAt);
+    private sealed record StudioProject(Guid ProjectId, string Name, string LocalPath, string? Description, string Status, DateTimeOffset CreatedAt);
+    private sealed record UpdateProjectRequest(string Name, string LocalPath, string? Description, string Status);
+    private sealed record CreateProjectOrganizationItemRequest(string Title, string? Notes, string Status);
+    private sealed record ProjectOrganizationItem(Guid ItemId, string Title, string? Notes, string Status, DateTimeOffset CreatedAt);
 }

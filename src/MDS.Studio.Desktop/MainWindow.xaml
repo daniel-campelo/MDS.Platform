@@ -43,8 +43,25 @@
      <TextBlock Text="Pasta local" Margin="0,14,0,4"/><TextBox x:Name="ProjectPathInput" Padding="8" MaxLength="1024"/>
      <StackPanel Orientation="Horizontal" Margin="0,20,0,0"><Button Content="Criar projeto" Padding="14,7" Click="CreateProject_Click"/><Button Content="Atualizar lista" Margin="12,0,0,0" Padding="14,7" Click="RefreshProjects_Click"/><Button Content="Voltar ao início" Margin="12,0,0,0" Padding="14,7" Click="Home_Click"/></StackPanel>
     </StackPanel></Border>
-    <TextBlock Text="Projetos cadastrados" FontSize="18" FontWeight="SemiBold" Margin="0,26,0,8"/><Border Background="White" BorderBrush="#D5DBDB" BorderThickness="1" Padding="14"><TextBlock x:Name="ProjectsListText" TextWrapping="Wrap"/></Border>
+    <TextBlock Text="Projetos cadastrados" FontSize="18" FontWeight="SemiBold" Margin="0,26,0,8"/><Border Background="White" BorderBrush="#D5DBDB" BorderThickness="1" Padding="14"><StackPanel><ComboBox x:Name="ProjectSelector" DisplayMemberPath="Name" MinWidth="360"/><Button Content="Abrir detalhes" Width="120" HorizontalAlignment="Left" Margin="0,12,0,0" Padding="10,6" Click="OpenProject_Click"/></StackPanel></Border>
     <TextBlock x:Name="ProjectsStatusText" Margin="0,18,0,0" TextWrapping="Wrap" Foreground="#34495E"/>
+    <StackPanel x:Name="ProjectDetailsPanel" Visibility="Collapsed"><TextBlock Text="Detalhes do projeto" FontSize="22" FontWeight="SemiBold" Margin="0,28,0,8"/>
+     <Border Background="#F8F9F9" BorderBrush="#D5DBDB" BorderThickness="1" CornerRadius="6" Padding="20"><StackPanel>
+      <TextBlock x:Name="ProjectDetailsHeading" FontSize="17" FontWeight="SemiBold"/><TextBlock Text="Nome" Margin="0,16,0,4"/><TextBox x:Name="ProjectDetailsNameInput" Padding="8" MaxLength="160"/>
+      <TextBlock Text="Pasta local" Margin="0,14,0,4"/><TextBox x:Name="ProjectDetailsPathInput" Padding="8" MaxLength="1024"/>
+      <TextBlock Text="Situação" Margin="0,14,0,4"/><ComboBox x:Name="ProjectStatusInput" SelectedIndex="0"><ComboBoxItem Content="Ativo"/><ComboBoxItem Content="Em espera"/><ComboBoxItem Content="Concluído"/></ComboBox>
+      <TextBlock Text="Descrição" Margin="0,14,0,4"/><TextBox x:Name="ProjectDescriptionInput" Padding="8" MaxLength="2000" TextWrapping="Wrap" AcceptsReturn="True" Height="72"/>
+      <Button Content="Salvar detalhes" Width="120" HorizontalAlignment="Left" Margin="0,20,0,0" Padding="10,6" Click="SaveProjectDetails_Click"/>
+     </StackPanel></Border>
+     <TextBlock Text="Organização interna" FontSize="18" FontWeight="SemiBold" Margin="0,26,0,4"/><TextBlock Text="Registre etapas ou anotações internas. Isto não cria arquivos, moldes nem produção." Foreground="Gray" TextWrapping="Wrap"/>
+     <Border Background="White" BorderBrush="#D5DBDB" BorderThickness="1" Padding="20" Margin="0,12,0,0"><StackPanel>
+      <TextBlock Text="Título" Margin="0,0,0,4"/><TextBox x:Name="OrganizationTitleInput" Padding="8" MaxLength="160"/>
+      <TextBlock Text="Situação" Margin="0,14,0,4"/><ComboBox x:Name="OrganizationStatusInput" SelectedIndex="0"><ComboBoxItem Content="Pendente"/><ComboBoxItem Content="Em andamento"/><ComboBoxItem Content="Concluído"/></ComboBox>
+      <TextBlock Text="Anotação" Margin="0,14,0,4"/><TextBox x:Name="OrganizationNotesInput" Padding="8" MaxLength="2000" TextWrapping="Wrap" AcceptsReturn="True" Height="62"/>
+      <Button Content="Adicionar item" Width="120" HorizontalAlignment="Left" Margin="0,20,0,0" Padding="10,6" Click="AddOrganizationItem_Click"/>
+      <TextBlock Text="Itens registrados" FontWeight="SemiBold" Margin="0,22,0,8"/><TextBlock x:Name="OrganizationListText" TextWrapping="Wrap"/>
+     </StackPanel></Border>
+    </StackPanel>
    </StackPanel>
   </StackPanel></ScrollViewer>
  </Grid>

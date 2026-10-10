@@ -79,7 +79,7 @@ app.MapHealthChecks("/health");
 app.MapGet("/version", (IHostEnvironment env) => Results.Ok(new { product = "MDS Studio API", version = "0.0.1", environment = env.EnvironmentName }));
 app.MapGet("/me", (ClaimsPrincipal user) => Results.Ok(new { id = user.FindFirstValue(ClaimTypes.NameIdentifier), name = user.Identity?.Name, permissions = user.FindAll("permission").Select(x => x.Value) })).RequireAuthorization(Permissions.StudioAccess);
 app.MapGet("/diagnostics", (IHostEnvironment env) => Results.Ok(new { environment = env.EnvironmentName, api = "0.0.1" })).RequireAuthorization(Permissions.AdminDiagnostics);
-app.MapGet("/projects", async (StudioDbContext db, CancellationToken ct) => Results.Ok(await db.Projects.OrderBy(x => x.Name).Select(x => new { projectId = x.Id, x.Name, x.LocalPath, x.CreatedAt }).ToListAsync(ct))).RequireAuthorization(Permissions.StudioAccess);
+app.MapGet("/projects", async (StudioDbContext db, CancellationToken ct) => Results.Ok(await db.Projects.OrderBy(x => x.Name).Select(x => new { projectId = x.Id, x.Name, x.LocalPath, x.Description, x.Status, x.CreatedAt }).ToListAsync(ct))).RequireAuthorization(Permissions.StudioAccess);
 app.MapPost("/projects", async (CreateProjectRequest request, ClaimsPrincipal user, StudioDbContext db, CancellationToken ct) =>
 {
     var name = request.Name?.Trim();
@@ -91,6 +91,40 @@ app.MapPost("/projects", async (CreateProjectRequest request, ClaimsPrincipal us
     var project = new StudioProject { Name = name, LocalPath = localPath, CreatedByUserId = user.FindFirstValue(ClaimTypes.NameIdentifier) ?? "unknown", CreatedAt = DateTimeOffset.UtcNow };
     db.Projects.Add(project); await db.SaveChangesAsync(ct);
     return Results.Created($"/projects/{project.Id}", new { projectId = project.Id, project.Name, project.LocalPath, project.CreatedAt });
+}).RequireAuthorization(Permissions.StudioAccess);
+app.MapGet("/projects/{projectId:guid}", async (Guid projectId, StudioDbContext db, CancellationToken ct) =>
+{
+    var project = await db.Projects.Where(x => x.Id == projectId).Select(x => new { projectId = x.Id, x.Name, x.LocalPath, x.Description, x.Status, x.CreatedAt }).SingleOrDefaultAsync(ct);
+    return project is null ? Results.NotFound(new { code = "MDS-STUDIO-PROJECT-001", message = "Project not found." }) : Results.Ok(project);
+}).RequireAuthorization(Permissions.StudioAccess);
+app.MapPut("/projects/{projectId:guid}", async (Guid projectId, UpdateProjectRequest request, StudioDbContext db, CancellationToken ct) =>
+{
+    var name = request.Name?.Trim();
+    var localPath = request.LocalPath?.Trim();
+    var description = request.Description?.Trim();
+    if (string.IsNullOrWhiteSpace(name) || name.Length > 160 || string.IsNullOrWhiteSpace(localPath) || localPath.Length > 1024 || description?.Length > 2000 || !ProjectOrganizationRules.ProjectStatuses.Contains(request.Status))
+        return Results.BadRequest(new { code = "MDS-STUDIO-PROJECT-001", message = "Project details are invalid." });
+    var project = await db.Projects.FindAsync([projectId], ct);
+    if (project is null) return Results.NotFound(new { code = "MDS-STUDIO-PROJECT-001", message = "Project not found." });
+    if (await db.Projects.AnyAsync(x => x.Id != projectId && x.LocalPath == localPath, ct)) return Results.Conflict(new { code = "MDS-STUDIO-PROJECT-001", message = "A project already uses this local folder." });
+    project.Name = name; project.LocalPath = localPath; project.Description = description; project.Status = request.Status;
+    await db.SaveChangesAsync(ct);
+    return Results.Ok(new { projectId = project.Id, project.Name, project.LocalPath, project.Description, project.Status, project.CreatedAt });
+}).RequireAuthorization(Permissions.StudioAccess);
+app.MapGet("/projects/{projectId:guid}/organization", async (Guid projectId, StudioDbContext db, CancellationToken ct) =>
+{
+    if (!await db.Projects.AnyAsync(x => x.Id == projectId, ct)) return Results.NotFound(new { code = "MDS-STUDIO-PROJECT-001", message = "Project not found." });
+    return Results.Ok(await db.ProjectOrganizationItems.Where(x => x.ProjectId == projectId).OrderBy(x => x.CreatedAt).Select(x => new { itemId = x.Id, x.Title, x.Notes, x.Status, x.CreatedAt }).ToListAsync(ct));
+}).RequireAuthorization(Permissions.StudioAccess);
+app.MapPost("/projects/{projectId:guid}/organization", async (Guid projectId, CreateProjectOrganizationItemRequest request, StudioDbContext db, CancellationToken ct) =>
+{
+    var title = request.Title?.Trim();
+    var notes = request.Notes?.Trim();
+    if (string.IsNullOrWhiteSpace(title) || title.Length > 160 || notes?.Length > 2000 || !ProjectOrganizationRules.OrganizationStatuses.Contains(request.Status)) return Results.BadRequest(new { code = "MDS-STUDIO-PROJECT-002", message = "Organization item is invalid." });
+    if (!await db.Projects.AnyAsync(x => x.Id == projectId, ct)) return Results.NotFound(new { code = "MDS-STUDIO-PROJECT-001", message = "Project not found." });
+    var item = new ProjectOrganizationItem { ProjectId = projectId, Title = title, Notes = notes, Status = request.Status, CreatedAt = DateTimeOffset.UtcNow };
+    db.ProjectOrganizationItems.Add(item); await db.SaveChangesAsync(ct);
+    return Results.Created($"/projects/{projectId}/organization/{item.Id}", new { itemId = item.Id, item.Title, item.Notes, item.Status, item.CreatedAt });
 }).RequireAuthorization(Permissions.StudioAccess);
 app.MapPost("/agents/enrollment-requests", async (EnrollmentRequest request, StudioDbContext db, CancellationToken ct) =>
 {
@@ -170,6 +204,13 @@ app.Run();
 
 public partial class Program { }
 public sealed record CreateProjectRequest(string? Name, string? LocalPath);
+public sealed record UpdateProjectRequest(string? Name, string? LocalPath, string? Description, string Status);
+public sealed record CreateProjectOrganizationItemRequest(string? Title, string? Notes, string Status);
+public static class ProjectOrganizationRules
+{
+    public static readonly HashSet<string> ProjectStatuses = ["Ativo", "Em espera", "Concluído"];
+    public static readonly HashSet<string> OrganizationStatuses = ["Pendente", "Em andamento", "Concluído"];
+}
 public sealed class SharedIdentityOptions
 {
     public const string SectionName = "Authentication";

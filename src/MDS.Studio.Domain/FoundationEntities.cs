@@ -8,9 +8,21 @@ public enum JobStatus { Queued, Running, Completed, Failed, Cancelled }
 public sealed class StudioProject
 {
     public Guid Id { get; init; } = Guid.NewGuid();
-    public required string Name { get; init; }
-    public required string LocalPath { get; init; }
+    public required string Name { get; set; }
+    public required string LocalPath { get; set; }
+    public string? Description { get; set; }
+    public string Status { get; set; } = "Ativo";
     public required string CreatedByUserId { get; init; }
+    public DateTimeOffset CreatedAt { get; init; }
+}
+
+public sealed class ProjectOrganizationItem
+{
+    public Guid Id { get; init; } = Guid.NewGuid();
+    public Guid ProjectId { get; init; }
+    public required string Title { get; init; }
+    public string? Notes { get; init; }
+    public string Status { get; init; } = "Pendente";
     public DateTimeOffset CreatedAt { get; init; }
 }
 
