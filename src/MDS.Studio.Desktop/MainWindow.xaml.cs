@@ -550,6 +550,8 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void ApplyProjectFilter_Click(object sender, RoutedEventArgs e) => await RefreshProjectsAsync();
+
     private async Task RefreshProjectsAsync()
     {
         try
@@ -562,10 +564,16 @@ public partial class MainWindow : Window
                 return;
             }
 
-            var projects = await response.Content.ReadFromJsonAsync<StudioProject[]>() ?? [];
+            var allProjects = await response.Content.ReadFromJsonAsync<StudioProject[]>() ?? [];
+            var selectedStatus = SelectedContent(ProjectFilterStatusInput, "Todas");
+            var projects = allProjects
+                .Where(project => selectedStatus == "Todas" || project.Status == selectedStatus)
+                .ToArray();
             ProjectSelector.ItemsSource = projects;
             ProjectSelector.SelectedItem = null;
-            ProjectsStatusText.Text = projects.Length == 0 ? "Lista atualizada." : $"{projects.Length} projeto(s) cadastrado(s).";
+            ProjectsStatusText.Text = projects.Length == 0
+                ? "Nenhum projeto encontrado para o filtro escolhido."
+                : $"{projects.Length} de {allProjects.Length} projeto(s) exibido(s).";
         }
         catch (HttpRequestException)
         {
