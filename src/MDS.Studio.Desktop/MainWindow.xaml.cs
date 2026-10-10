@@ -278,6 +278,32 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void UpdatePatternStatus_Click(object sender, RoutedEventArgs e)
+    {
+        if (ExistingPatternSelector.SelectedItem is not StudioPattern pattern)
+        {
+            PatternsStatusText.Text = "Escolha um molde antes de atualizar a situação.";
+            return;
+        }
+
+        try
+        {
+            var response = await studioClient.PutAsJsonAsync($"patterns/{pattern.PatternId}", new UpdatePatternStatusRequest(SelectedContent(ExistingPatternStatusInput, "Rascunho")));
+            if (!response.IsSuccessStatusCode)
+            {
+                PatternsStatusText.Text = $"Não foi possível atualizar o molde (resposta {(int)response.StatusCode}).";
+                return;
+            }
+
+            PatternsStatusText.Text = "Situação do molde atualizada.";
+            await RefreshPatternsAsync();
+        }
+        catch (HttpRequestException)
+        {
+            PatternsStatusText.Text = "Não foi possível alcançar a API do Studio.";
+        }
+    }
+
     private async Task RefreshPatternProjectsAsync()
     {
         try
@@ -307,6 +333,8 @@ public partial class MainWindow : Window
             }
 
             var patterns = await response.Content.ReadFromJsonAsync<StudioPattern[]>() ?? [];
+            ExistingPatternSelector.ItemsSource = patterns;
+            ExistingPatternSelector.SelectedItem = null;
             PatternsListText.Text = patterns.Length == 0
                 ? "Nenhum molde registrado ainda."
                 : string.Join(Environment.NewLine + Environment.NewLine, patterns.Select(pattern => $"{pattern.Name} · {pattern.Status} · Projeto: {pattern.ProjectName}{(string.IsNullOrWhiteSpace(pattern.Notes) ? string.Empty : Environment.NewLine + pattern.Notes)}"));
@@ -315,6 +343,7 @@ public partial class MainWindow : Window
         catch (HttpRequestException)
         {
             PatternsListText.Text = "A lista de moldes não está disponível.";
+            ExistingPatternSelector.ItemsSource = null;
             PatternsStatusText.Text = "Não foi possível alcançar a API do Studio.";
         }
     }
@@ -747,6 +776,7 @@ public partial class MainWindow : Window
     private sealed record LibraryItem(Guid AssetId, string OriginalName, string ContentType, string LocalPath, Guid? ProjectId, string? ProjectName, DateTimeOffset CreatedAt);
     private sealed record CreatePatternRequest(Guid ProjectId, string Name, string? Notes, string Status);
     private sealed record StudioPattern(Guid PatternId, string Name, string? Notes, string Status, Guid ProjectId, string ProjectName, DateTimeOffset CreatedAt);
+    private sealed record UpdatePatternStatusRequest(string Status);
     private sealed record StudioProject(Guid ProjectId, string Name, string LocalPath, string? Description, string Status, DateTimeOffset CreatedAt);
     private sealed record UpdateProjectRequest(string Name, string LocalPath, string? Description, string Status);
     private sealed record CreateProjectOrganizationItemRequest(string Title, string? Notes, string Status);
