@@ -392,20 +392,30 @@ public partial class MainWindow : Window
         try
         {
             var projectId = (LibraryExistingProjectSelector.SelectedItem as StudioProject)?.ProjectId;
-            var response = await studioClient.PutAsJsonAsync($"library/{item.AssetId}", new UpdateLibraryItemRequest(projectId));
+            var response = await studioClient.PutAsJsonAsync($"library/{item.AssetId}", new UpdateLibraryItemRequest(LibraryExistingNameInput.Text.Trim(), SelectedContent(LibraryExistingTypeInput, "Referência"), LibraryExistingPathInput.Text.Trim(), projectId));
             if (!response.IsSuccessStatusCode)
             {
                 LibraryStatusText.Text = $"Não foi possível salvar o vínculo (resposta {(int)response.StatusCode}).";
                 return;
             }
 
-            LibraryStatusText.Text = "Vínculo da referência atualizado.";
+            LibraryStatusText.Text = "Referência atualizada.";
             await RefreshLibraryAsync();
         }
         catch (HttpRequestException)
         {
             LibraryStatusText.Text = "Não foi possível alcançar a API do Studio.";
         }
+    }
+
+    private void LibraryItemSelector_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (LibraryItemSelector.SelectedItem is not LibraryItem item) return;
+        LibraryExistingNameInput.Text = item.OriginalName;
+        LibraryExistingPathInput.Text = item.LocalPath;
+        SelectLibraryType(item.ContentType);
+        if (LibraryExistingProjectSelector.ItemsSource is IEnumerable<StudioProject> projects)
+            LibraryExistingProjectSelector.SelectedItem = projects.FirstOrDefault(project => project.ProjectId == item.ProjectId);
     }
 
     private async Task RefreshLibraryAsync()
@@ -695,6 +705,14 @@ public partial class MainWindow : Window
     private static string SelectedContent(System.Windows.Controls.ComboBox comboBox, string fallback)
         => (comboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Content?.ToString() ?? fallback;
 
+    private void SelectLibraryType(string type) => LibraryExistingTypeInput.SelectedIndex = type switch
+    {
+        "Imagem" => 1,
+        "Documento" => 2,
+        "Outro" => 3,
+        _ => 0
+    };
+
     private async Task RefreshDiagnosticsAsync()
     {
         try
@@ -796,7 +814,7 @@ public partial class MainWindow : Window
     private sealed record StudioDashboard(int Projects, int LibraryItems, int Patterns);
     private sealed record CreateProjectRequest(string Name, string LocalPath);
     private sealed record CreateLibraryItemRequest(string Name, string Type, string LocalPath, Guid? ProjectId);
-    private sealed record UpdateLibraryItemRequest(Guid? ProjectId);
+    private sealed record UpdateLibraryItemRequest(string Name, string Type, string LocalPath, Guid? ProjectId);
     private sealed record LibraryItem(Guid AssetId, string OriginalName, string ContentType, string LocalPath, Guid? ProjectId, string? ProjectName, DateTimeOffset CreatedAt);
     private sealed record CreatePatternRequest(Guid ProjectId, string Name, string? Notes, string Status);
     private sealed record StudioPattern(Guid PatternId, string Name, string? Notes, string Status, Guid ProjectId, string ProjectName, DateTimeOffset CreatedAt);

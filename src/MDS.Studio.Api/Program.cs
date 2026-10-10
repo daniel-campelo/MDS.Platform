@@ -112,11 +112,18 @@ app.MapPut("/library/{assetId:guid}", async (Guid assetId, UpdateLibraryItemRequ
 {
     var asset = await db.FileAssets.FindAsync([assetId], ct);
     if (asset is null || asset.LocalPath is null) return Results.NotFound(new { code = "MDS-STUDIO-LIBRARY-001", message = "Library item not found." });
+    var name = request.Name?.Trim();
+    var type = request.Type?.Trim();
+    var localPath = request.LocalPath?.Trim();
+    if (string.IsNullOrWhiteSpace(name) || name.Length > 260 || string.IsNullOrWhiteSpace(type) || type.Length > 80 || string.IsNullOrWhiteSpace(localPath) || localPath.Length > 1024)
+        return Results.BadRequest(new { code = "MDS-STUDIO-LIBRARY-001", message = "Library details are invalid." });
     if (request.ProjectId is not null && !await db.Projects.AnyAsync(x => x.Id == request.ProjectId, ct))
         return Results.BadRequest(new { code = "MDS-STUDIO-LIBRARY-001", message = "The selected project does not exist." });
-    asset.ProjectId = request.ProjectId;
+    if (await db.FileAssets.AnyAsync(x => x.Id != assetId && x.LocalPath == localPath, ct))
+        return Results.Conflict(new { code = "MDS-STUDIO-LIBRARY-001", message = "A library item already uses this local path." });
+    asset.OriginalName = name; asset.ContentType = type; asset.LocalPath = localPath; asset.ProjectId = request.ProjectId;
     await db.SaveChangesAsync(ct);
-    return Results.Ok(new { assetId = asset.Id, asset.OriginalName, asset.ProjectId });
+    return Results.Ok(new { assetId = asset.Id, asset.OriginalName, asset.ContentType, asset.LocalPath, asset.ProjectId });
 }).RequireAuthorization(Permissions.StudioAccess);
 app.MapGet("/patterns", async (Guid? projectId, StudioDbContext db, CancellationToken ct) => Results.Ok(await (
     from pattern in db.Patterns
@@ -281,7 +288,7 @@ app.Run();
 public partial class Program { }
 public sealed record CreateProjectRequest(string? Name, string? LocalPath);
 public sealed record CreateLibraryItemRequest(string? Name, string? Type, string? LocalPath, Guid? ProjectId);
-public sealed record UpdateLibraryItemRequest(Guid? ProjectId);
+public sealed record UpdateLibraryItemRequest(string? Name, string? Type, string? LocalPath, Guid? ProjectId);
 public sealed record CreatePatternRequest(Guid ProjectId, string? Name, string? Notes, string Status);
 public sealed record UpdatePatternStatusRequest(string Status);
 public sealed record UpdateProjectRequest(string? Name, string? LocalPath, string? Description, string Status);
