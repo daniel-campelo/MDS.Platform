@@ -17,6 +17,17 @@ if (Test-Path -LiteralPath $processFile) {
     Remove-Item -LiteralPath $processFile -Force
 }
 
+# dotnet can hand off the process started by Start-Process to the application host.
+# Always stop the API that owns the explicit staging port as well.
+Get-NetTCPConnection -LocalPort 5000 -State Listen -ErrorAction SilentlyContinue |
+    Select-Object -ExpandProperty OwningProcess -Unique |
+    ForEach-Object {
+        $process = Get-Process -Id $_ -ErrorAction SilentlyContinue
+        if ($null -ne $process -and $process.ProcessName -eq 'MDS.Studio.Api') {
+            Stop-Process -Id $_
+        }
+    }
+
 Push-Location $repositoryRoot
 try {
     docker compose -f $composeFile stop

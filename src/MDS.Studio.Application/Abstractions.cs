@@ -5,8 +5,8 @@ namespace MDS.Studio.Application;
 public static class Permissions
 {
     public const string StudioAccess = "studio.access";
-    public const string AdminDiagnostics = "studio.admin.diagnostics";
-    public const string AgentManage = "studio.agent.manage";
+    public const string AdminDiagnostics = "studio.diagnostics";
+    public const string AgentManage = "agent.manage";
 }
 public sealed record FileStorageMetadata(string Key, long SizeBytes, FileHash Hash);
 public interface IFileStorage
