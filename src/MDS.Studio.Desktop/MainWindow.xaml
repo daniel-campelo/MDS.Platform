@@ -72,7 +72,7 @@
       <TextBlock Text="Pasta local" Margin="0,14,0,4"/><TextBox x:Name="ProjectDetailsPathInput" Padding="8" MaxLength="1024"/>
       <TextBlock Text="Situação" Margin="0,14,0,4"/><ComboBox x:Name="ProjectStatusInput" SelectedIndex="0"><ComboBoxItem Content="Ativo"/><ComboBoxItem Content="Em espera"/><ComboBoxItem Content="Concluído"/></ComboBox>
       <TextBlock Text="Descrição" Margin="0,14,0,4"/><TextBox x:Name="ProjectDescriptionInput" Padding="8" MaxLength="2000" TextWrapping="Wrap" AcceptsReturn="True" Height="72"/>
-      <Button Content="Salvar detalhes" Width="120" HorizontalAlignment="Left" Margin="0,20,0,0" Padding="10,6" Click="SaveProjectDetails_Click"/>
+      <StackPanel Orientation="Horizontal" Margin="0,20,0,0"><Button Content="Salvar detalhes" Width="120" Padding="10,6" Click="SaveProjectDetails_Click"/><Button Content="Abrir pasta do projeto" Margin="12,0,0,0" Padding="14,7" Background="#E2E8F0" Foreground="#334155" BorderBrush="#CBD5E1" Click="OpenProjectFolder_Click"/></StackPanel>
      </StackPanel></Border>
      <TextBlock Text="Itens vinculados ao projeto" FontSize="18" FontWeight="SemiBold" Margin="0,26,0,8"/>
      <Border Background="#F8FAFC" BorderBrush="#DCE6F2" BorderThickness="1" CornerRadius="8" Padding="18"><StackPanel><TextBlock Text="Referências da Biblioteca" Foreground="#334155" FontWeight="SemiBold"/><TextBlock x:Name="ProjectLibraryListText" TextWrapping="Wrap" Margin="0,8,0,18"/><TextBlock Text="Moldes" Foreground="#334155" FontWeight="SemiBold"/><TextBlock x:Name="ProjectPatternsListText" TextWrapping="Wrap" Margin="0,8,0,0"/></StackPanel></Border>

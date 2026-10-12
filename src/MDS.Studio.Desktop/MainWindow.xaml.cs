@@ -778,6 +778,26 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OpenProjectFolder_Click(object sender, RoutedEventArgs e)
+    {
+        var path = ProjectDetailsPathInput.Text.Trim();
+        if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
+        {
+            ProjectsStatusText.Text = "A pasta local do projeto não foi encontrada no caminho informado.";
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo("explorer.exe", $"\"{path}\"") { UseShellExecute = true });
+            ProjectsStatusText.Text = "Abrindo a pasta do projeto no Explorador de Arquivos.";
+        }
+        catch (Exception)
+        {
+            ProjectsStatusText.Text = "Não foi possível abrir a pasta do projeto no Explorador de Arquivos.";
+        }
+    }
+
     private async void AddOrganizationItem_Click(object sender, RoutedEventArgs e)
     {
         if (currentProjectId is null) return;
