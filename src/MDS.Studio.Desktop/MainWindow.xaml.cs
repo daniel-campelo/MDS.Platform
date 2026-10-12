@@ -911,6 +911,7 @@ public partial class MainWindow : Window
             if (!response.IsSuccessStatusCode)
             {
                 OrganizationListText.Text = "Os itens internos não estão disponíveis.";
+                ProjectProgressText.Text = "Não foi possível calcular o progresso dos itens internos.";
                 return;
             }
 
@@ -920,10 +921,17 @@ public partial class MainWindow : Window
             OrganizationListText.Text = items.Length == 0
                 ? "Nenhum item interno registrado."
                 : string.Join(Environment.NewLine + Environment.NewLine, items.Select(item => $"{item.Title} · {item.Status}{(string.IsNullOrWhiteSpace(item.Notes) ? string.Empty : Environment.NewLine + item.Notes)}"));
+            var pending = items.Count(item => string.Equals(item.Status, "Pendente", StringComparison.OrdinalIgnoreCase));
+            var inProgress = items.Count(item => string.Equals(item.Status, "Em andamento", StringComparison.OrdinalIgnoreCase));
+            var completed = items.Count(item => string.Equals(item.Status, "Concluído", StringComparison.OrdinalIgnoreCase));
+            ProjectProgressText.Text = items.Length == 0
+                ? "Ainda não há etapas internas registradas neste projeto."
+                : $"{completed} concluído(s) · {inProgress} em andamento · {pending} pendente(s)";
         }
         catch (HttpRequestException)
         {
             OrganizationListText.Text = "Os itens internos não estão disponíveis.";
+            ProjectProgressText.Text = "Não foi possível calcular o progresso dos itens internos.";
         }
     }
 
