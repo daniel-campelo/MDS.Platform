@@ -152,7 +152,7 @@ public partial class MainWindow : Window
 
     private async void RefreshStatus_Click(object sender, RoutedEventArgs e) => await RefreshStudioStatusAsync();
 
-    private void Home_Click(object sender, RoutedEventArgs e)
+    private async void Home_Click(object sender, RoutedEventArgs e)
     {
         DiagnosticsPanel.Visibility = Visibility.Collapsed;
         ProjectsPanel.Visibility = Visibility.Collapsed;
@@ -162,6 +162,7 @@ public partial class MainWindow : Window
         SettingsPanel.Visibility = Visibility.Collapsed;
         currentProjectId = null;
         HomePanel.Visibility = Visibility.Visible;
+        if (!string.IsNullOrWhiteSpace(sessionToken)) await RefreshHomeProjectsAsync();
     }
 
     private void Settings_Click(object sender, RoutedEventArgs e)
@@ -791,6 +792,11 @@ public partial class MainWindow : Window
             return;
         }
 
+        await OpenProjectDetailsAsync(selected);
+    }
+
+    private async Task OpenProjectDetailsAsync(StudioProject selected)
+    {
         try
         {
             var response = await studioClient.GetAsync($"projects/{selected.ProjectId}");
@@ -817,6 +823,21 @@ public partial class MainWindow : Window
         {
             ProjectsStatusText.Text = "Não foi possível alcançar a API do Studio.";
         }
+    }
+
+    private async void OpenHomeProject_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: StudioProject project }) return;
+        HomePanel.Visibility = Visibility.Collapsed;
+        DiagnosticsPanel.Visibility = Visibility.Collapsed;
+        SettingsPanel.Visibility = Visibility.Collapsed;
+        LibraryPanel.Visibility = Visibility.Collapsed;
+        PatternsPanel.Visibility = Visibility.Collapsed;
+        ProjectsPanel.Visibility = Visibility.Visible;
+        ProjectDetailsPanel.Visibility = Visibility.Collapsed;
+        ProjectSelector.ItemsSource = new[] { project };
+        ProjectSelector.SelectedItem = project;
+        await OpenProjectDetailsAsync(project);
     }
 
     private async void SaveProjectDetails_Click(object sender, RoutedEventArgs e)
@@ -1179,6 +1200,7 @@ public partial class MainWindow : Window
                 _ => $"Local Agent: {string.Join(" · ", agents.Select(agent => $"{agent.MachineName} ({(agent.IsAuthorized ? "autorizado" : "aguardando autorização")})"))}"
             };
             await RefreshWorkspaceSummaryAsync();
+            await RefreshHomeProjectsAsync();
         }
         catch (HttpRequestException)
         {
@@ -1206,6 +1228,52 @@ public partial class MainWindow : Window
         catch (HttpRequestException)
         {
             WorkspaceSummaryText.Text = "Resumo indisponível.";
+        }
+    }
+
+    private async Task RefreshHomeProjectsAsync()
+    {
+        HomeProjectCardsPanel.Children.Clear();
+        try
+        {
+            var response = await studioClient.GetAsync("projects");
+            if (!response.IsSuccessStatusCode)
+            {
+                HomeProjectsStatusText.Text = "Projetos indisponíveis no momento.";
+                return;
+            }
+
+            var projects = await response.Content.ReadFromJsonAsync<StudioProject[]>() ?? [];
+            foreach (var project in projects.Take(6))
+            {
+                var content = new StackPanel();
+                content.Children.Add(new TextBlock { Text = project.Name, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap });
+                content.Children.Add(new TextBlock { Text = project.Status, Foreground = new SolidColorBrush(Color.FromRgb(71, 85, 105)), Margin = new Thickness(0, 5, 0, 0) });
+                var button = new Button
+                {
+                    Tag = project,
+                    Content = content,
+                    Width = 185,
+                    Background = Brushes.White,
+                    Foreground = new SolidColorBrush(Color.FromRgb(15, 23, 42)),
+                    BorderBrush = new SolidColorBrush(Color.FromRgb(191, 219, 254)),
+                    BorderThickness = new Thickness(1),
+                    Padding = new Thickness(13),
+                    Margin = new Thickness(0, 0, 12, 12),
+                    HorizontalContentAlignment = HorizontalAlignment.Left,
+                    ToolTip = "Abrir detalhes do projeto"
+                };
+                button.Click += OpenHomeProject_Click;
+                HomeProjectCardsPanel.Children.Add(button);
+            }
+
+            HomeProjectsStatusText.Text = projects.Length == 0
+                ? "Nenhum projeto cadastrado ainda."
+                : "Clique em um projeto para abrir seus detalhes.";
+        }
+        catch (HttpRequestException)
+        {
+            HomeProjectsStatusText.Text = "Projetos indisponíveis no momento.";
         }
     }
 
