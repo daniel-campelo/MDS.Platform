@@ -526,7 +526,13 @@ public partial class MainWindow : Window
     {
         LibraryPreviewPanel.Visibility = Visibility.Collapsed;
         LibraryImagePreview.Source = null;
-        if (!string.Equals(item.ContentType, "Imagem", StringComparison.OrdinalIgnoreCase) || !File.Exists(item.LocalPath)) return;
+        if (!string.Equals(item.ContentType, "Imagem", StringComparison.OrdinalIgnoreCase)) return;
+        if (!File.Exists(item.LocalPath))
+        {
+            LibraryPreviewCaptionText.Text = "A imagem não foi encontrada no caminho local registrado.";
+            LibraryPreviewPanel.Visibility = Visibility.Visible;
+            return;
+        }
 
         try
         {
