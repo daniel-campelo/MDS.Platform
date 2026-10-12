@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using System.Windows.Media.Imaging;
 
 namespace MDS.Studio.Desktop;
 
@@ -516,8 +517,34 @@ public partial class MainWindow : Window
         LibraryExistingNameInput.Text = item.OriginalName;
         LibraryExistingPathInput.Text = item.LocalPath;
         SelectLibraryType(item.ContentType);
+        RefreshLibraryPreview(item);
         if (LibraryExistingProjectSelector.ItemsSource is IEnumerable<StudioProject> projects)
             LibraryExistingProjectSelector.SelectedItem = projects.FirstOrDefault(project => project.ProjectId == item.ProjectId);
+    }
+
+    private void RefreshLibraryPreview(LibraryItem item)
+    {
+        LibraryPreviewPanel.Visibility = Visibility.Collapsed;
+        LibraryImagePreview.Source = null;
+        if (!string.Equals(item.ContentType, "Imagem", StringComparison.OrdinalIgnoreCase) || !File.Exists(item.LocalPath)) return;
+
+        try
+        {
+            var image = new BitmapImage();
+            image.BeginInit();
+            image.CacheOption = BitmapCacheOption.OnLoad;
+            image.UriSource = new Uri(item.LocalPath, UriKind.Absolute);
+            image.EndInit();
+            image.Freeze();
+            LibraryImagePreview.Source = image;
+            LibraryPreviewCaptionText.Text = item.OriginalName;
+            LibraryPreviewPanel.Visibility = Visibility.Visible;
+        }
+        catch (Exception)
+        {
+            LibraryPreviewCaptionText.Text = "Não foi possível gerar a prévia desta imagem.";
+            LibraryPreviewPanel.Visibility = Visibility.Visible;
+        }
     }
 
     private void OpenLibraryFile_Click(object sender, RoutedEventArgs e)
@@ -570,6 +597,8 @@ public partial class MainWindow : Window
                 .ToArray();
             LibraryItemSelector.ItemsSource = items;
             LibraryItemSelector.SelectedItem = null;
+            LibraryPreviewPanel.Visibility = Visibility.Collapsed;
+            LibraryImagePreview.Source = null;
             LibraryListText.Text = items.Length == 0
                 ? "Nenhuma referência cadastrada ainda."
                 : string.Join(Environment.NewLine, items.Select(item => $"{item.OriginalName} · {item.ContentType} — {item.LocalPath}{(string.IsNullOrWhiteSpace(item.ProjectName) ? " · Biblioteca geral" : $" · Projeto: {item.ProjectName}")}"));
@@ -581,6 +610,8 @@ public partial class MainWindow : Window
         {
             LibraryListText.Text = "A biblioteca não está disponível.";
             LibraryItemSelector.ItemsSource = null;
+            LibraryPreviewPanel.Visibility = Visibility.Collapsed;
+            LibraryImagePreview.Source = null;
             LibraryStatusText.Text = "Não foi possível alcançar a API do Studio.";
         }
     }
