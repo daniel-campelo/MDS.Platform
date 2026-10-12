@@ -15,6 +15,7 @@ public partial class MainWindow : Window
     private string? sessionToken;
     private string? currentUsername;
     private Guid? currentProjectId;
+    private Guid? preferredLibraryItemId;
 
     public MainWindow() => InitializeComponent();
 
@@ -503,6 +504,7 @@ public partial class MainWindow : Window
             }
 
             LibraryStatusText.Text = "Referência atualizada.";
+            preferredLibraryItemId = item.AssetId;
             await RefreshLibraryAsync();
         }
         catch (HttpRequestException)
@@ -601,10 +603,14 @@ public partial class MainWindow : Window
                 .Where(item => selectedProjectId is null || item.ProjectId == selectedProjectId)
                 .Where(item => selectedType == "Todos" || item.ContentType == selectedType)
                 .ToArray();
-            LibraryItemSelector.ItemsSource = items;
-            LibraryItemSelector.SelectedItem = null;
             LibraryPreviewPanel.Visibility = Visibility.Collapsed;
             LibraryImagePreview.Source = null;
+            LibraryItemSelector.ItemsSource = items;
+            var preferredItem = preferredLibraryItemId is Guid preferredId
+                ? items.FirstOrDefault(candidate => candidate.AssetId == preferredId)
+                : null;
+            LibraryItemSelector.SelectedItem = preferredItem;
+            preferredLibraryItemId = null;
             LibraryListText.Text = items.Length == 0
                 ? "Nenhuma referência cadastrada ainda."
                 : string.Join(Environment.NewLine, items.Select(item => $"{item.OriginalName} · {item.ContentType} — {item.LocalPath}{(string.IsNullOrWhiteSpace(item.ProjectName) ? " · Biblioteca geral" : $" · Projeto: {item.ProjectName}")}"));
