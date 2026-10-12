@@ -251,6 +251,23 @@ public partial class MainWindow : Window
 
     private async void RefreshLibrary_Click(object sender, RoutedEventArgs e) => await RefreshLibraryAsync();
 
+    private async void OpenProjectLibrary_Click(object sender, RoutedEventArgs e)
+    {
+        if (currentProjectId is null) return;
+        HomePanel.Visibility = Visibility.Collapsed;
+        DiagnosticsPanel.Visibility = Visibility.Collapsed;
+        SettingsPanel.Visibility = Visibility.Collapsed;
+        ProjectsPanel.Visibility = Visibility.Collapsed;
+        ProjectDetailsPanel.Visibility = Visibility.Collapsed;
+        PatternsPanel.Visibility = Visibility.Collapsed;
+        LibraryPanel.Visibility = Visibility.Visible;
+        await RefreshLibraryProjectsAsync();
+        if (LibraryFilterProjectSelector.ItemsSource is IEnumerable<StudioProject> projects)
+            LibraryFilterProjectSelector.SelectedItem = projects.FirstOrDefault(project => project.ProjectId == currentProjectId);
+        LibraryFilterTypeInput.SelectedIndex = 0;
+        await RefreshLibraryAsync();
+    }
+
     private async void Patterns_Click(object sender, RoutedEventArgs e)
     {
         if (string.IsNullOrWhiteSpace(sessionToken))
@@ -273,6 +290,23 @@ public partial class MainWindow : Window
     }
 
     private async void RefreshPatterns_Click(object sender, RoutedEventArgs e) => await RefreshPatternsAsync();
+
+    private async void OpenProjectPatterns_Click(object sender, RoutedEventArgs e)
+    {
+        if (currentProjectId is null) return;
+        HomePanel.Visibility = Visibility.Collapsed;
+        DiagnosticsPanel.Visibility = Visibility.Collapsed;
+        SettingsPanel.Visibility = Visibility.Collapsed;
+        ProjectsPanel.Visibility = Visibility.Collapsed;
+        ProjectDetailsPanel.Visibility = Visibility.Collapsed;
+        LibraryPanel.Visibility = Visibility.Collapsed;
+        PatternsPanel.Visibility = Visibility.Visible;
+        await RefreshPatternProjectsAsync();
+        if (PatternFilterProjectSelector.ItemsSource is IEnumerable<StudioProject> projects)
+            PatternFilterProjectSelector.SelectedItem = projects.FirstOrDefault(project => project.ProjectId == currentProjectId);
+        PatternFilterStatusInput.SelectedIndex = 0;
+        await RefreshPatternsAsync();
+    }
 
     private async void ApplyPatternFilters_Click(object sender, RoutedEventArgs e) => await RefreshPatternsAsync();
 
