@@ -38,11 +38,11 @@
    <TextBlock x:Name="StatusText" Margin="0,18,0,0" TextWrapping="Wrap" Foreground="#34495E"/>
    <TextBlock Text="Foundation 0.0.1 · As áreas de produto continuam em desenvolvimento." Foreground="Gray" Margin="0,36,0,0"/>
    </StackPanel>
-   <StackPanel x:Name="DiagnosticsPanel" Visibility="Collapsed"><Border Background="#FFF4CE" Padding="12"><TextBlock Text="🧪 DIAGNÓSTICO — HOMOLOGAÇÃO" FontWeight="Bold"/></Border>
-    <TextBlock Text="Diagnóstico do MDS Studio" FontSize="28" Margin="0,28,0,4"/><TextBlock Text="Consulta somente. Nenhuma alteração é feita nesta tela." Foreground="Gray"/>
-    <Border Background="#F8F9F9" BorderBrush="#D5DBDB" BorderThickness="1" CornerRadius="6" Padding="20" Margin="0,28,0,0"><StackPanel>
-     <TextBlock x:Name="DiagnosticIdentityText" FontSize="16" FontWeight="SemiBold"/><TextBlock x:Name="DiagnosticApiText" Margin="0,16,0,4"/><TextBlock x:Name="DiagnosticAgentText" TextWrapping="Wrap"/>
-     <StackPanel Orientation="Horizontal" Margin="0,20,0,0"><Button Content="Atualizar diagnóstico" Padding="14,7" Click="RefreshDiagnostics_Click"/><Button Content="Voltar ao início" Margin="12,0,0,0" Padding="14,7" Click="Home_Click"/></StackPanel>
+   <StackPanel x:Name="DiagnosticsPanel" Visibility="Collapsed"><Border Background="#FEF3C7" Padding="14" CornerRadius="6"><TextBlock Text="🧪 DIAGNÓSTICO — HOMOLOGAÇÃO" Foreground="#92400E" FontWeight="Bold"/></Border>
+    <TextBlock Text="Diagnóstico do MDS Studio" FontSize="30" FontWeight="SemiBold" Foreground="#0F3D75" Margin="0,30,0,4"/><TextBlock Text="Consulta somente. Nenhuma alteração é feita nesta tela." Foreground="#64748B"/>
+    <Border Background="White" BorderBrush="#DCE6F2" BorderThickness="1" CornerRadius="8" Padding="22" Margin="0,28,0,0"><StackPanel>
+     <TextBlock Text="Estado da conexão" Foreground="#64748B" FontSize="11" FontWeight="SemiBold"/><TextBlock x:Name="DiagnosticIdentityText" FontSize="16" FontWeight="SemiBold" Margin="0,10,0,0"/><TextBlock x:Name="DiagnosticApiText" Margin="0,16,0,4" Foreground="#334155"/><TextBlock x:Name="DiagnosticAgentText" TextWrapping="Wrap" Foreground="#475569"/>
+     <StackPanel Orientation="Horizontal" Margin="0,22,0,0"><Button Content="Atualizar diagnóstico" Padding="14,7" Click="RefreshDiagnostics_Click"/><Button Content="Voltar ao início" Margin="12,0,0,0" Padding="14,7" Background="#E2E8F0" Foreground="#334155" BorderBrush="#CBD5E1" Click="Home_Click"/></StackPanel>
     </StackPanel></Border>
     <TextBlock x:Name="DiagnosticStatusText" Margin="0,18,0,0" TextWrapping="Wrap" Foreground="#34495E"/>
    </StackPanel>
