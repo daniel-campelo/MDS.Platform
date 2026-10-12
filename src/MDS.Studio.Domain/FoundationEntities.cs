@@ -38,6 +38,15 @@ public sealed class StudioPattern
     public DateTimeOffset CreatedAt { get; init; }
 }
 
+public sealed class PatternTechnicalRevision
+{
+    public Guid Id { get; init; } = Guid.NewGuid();
+    public Guid PatternId { get; init; }
+    public required string FilePath { get; init; }
+    public required string Version { get; init; }
+    public DateTimeOffset RecordedAt { get; init; }
+}
+
 public sealed class FileAsset
 {
     public Guid Id { get; init; } = Guid.NewGuid();

@@ -317,7 +317,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ExistingPatternSelector_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    private async void ExistingPatternSelector_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
         if (ExistingPatternSelector.SelectedItem is not StudioPattern pattern) return;
         ExistingPatternNameInput.Text = pattern.Name;
@@ -332,6 +332,28 @@ public partial class MainWindow : Window
         };
         if (ExistingPatternProjectSelector.ItemsSource is IEnumerable<StudioProject> projects)
             ExistingPatternProjectSelector.SelectedItem = projects.FirstOrDefault(project => project.ProjectId == pattern.ProjectId);
+        await RefreshPatternTechnicalHistoryAsync(pattern.PatternId);
+    }
+
+    private async Task RefreshPatternTechnicalHistoryAsync(Guid patternId)
+    {
+        try
+        {
+            var response = await studioClient.GetAsync($"patterns/{patternId}/technical-revisions");
+            if (!response.IsSuccessStatusCode)
+            {
+                PatternTechnicalHistoryText.Text = "O histórico técnico não está disponível.";
+                return;
+            }
+            var revisions = await response.Content.ReadFromJsonAsync<PatternTechnicalRevision[]>() ?? [];
+            PatternTechnicalHistoryText.Text = revisions.Length == 0
+                ? "Nenhuma versão técnica registrada ainda. Salve o molde para registrar a versão atual."
+                : string.Join(Environment.NewLine, revisions.Select(revision => $"{revision.Version} · {revision.FilePath} · registrado em {revision.RecordedAt.LocalDateTime:g}"));
+        }
+        catch (HttpRequestException)
+        {
+            PatternTechnicalHistoryText.Text = "Não foi possível consultar o histórico técnico.";
+        }
     }
 
     private async Task RefreshPatternProjectsAsync()
@@ -903,6 +925,7 @@ public partial class MainWindow : Window
     private sealed record CreatePatternRequest(Guid ProjectId, string Name, string? Notes, string Status);
     private sealed record StudioPattern(Guid PatternId, string Name, string? Notes, string? TechnicalFilePath, string? TechnicalVersion, string Status, Guid ProjectId, string ProjectName, DateTimeOffset CreatedAt);
     private sealed record UpdatePatternRequest(Guid ProjectId, string Name, string? Notes, string? TechnicalFilePath, string? TechnicalVersion, string Status);
+    private sealed record PatternTechnicalRevision(Guid RevisionId, string FilePath, string Version, DateTimeOffset RecordedAt);
     private sealed record StudioProject(Guid ProjectId, string Name, string LocalPath, string? Description, string Status, DateTimeOffset CreatedAt);
     private sealed record UpdateProjectRequest(string Name, string LocalPath, string? Description, string Status);
     private sealed record CreateProjectOrganizationItemRequest(string Title, string? Notes, string Status);

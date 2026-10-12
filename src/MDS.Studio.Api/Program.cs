@@ -157,8 +157,15 @@ app.MapPut("/patterns/{patternId:guid}", async (Guid patternId, UpdatePatternReq
     if (!await db.Projects.AnyAsync(x => x.Id == request.ProjectId, ct))
         return Results.BadRequest(new { code = "MDS-STUDIO-PATTERN-001", message = "The selected project does not exist." });
     pattern.ProjectId = request.ProjectId; pattern.Name = name; pattern.Notes = notes; pattern.TechnicalFilePath = technicalFilePath; pattern.TechnicalVersion = technicalVersion; pattern.Status = request.Status;
+    if (!string.IsNullOrWhiteSpace(technicalFilePath) && !string.IsNullOrWhiteSpace(technicalVersion) && !await db.PatternTechnicalRevisions.AnyAsync(x => x.PatternId == patternId && x.Version == technicalVersion, ct))
+        db.PatternTechnicalRevisions.Add(new PatternTechnicalRevision { PatternId = patternId, FilePath = technicalFilePath, Version = technicalVersion, RecordedAt = DateTimeOffset.UtcNow });
     await db.SaveChangesAsync(ct);
     return Results.Ok(new { patternId = pattern.Id, pattern.Name, pattern.Notes, pattern.TechnicalFilePath, pattern.TechnicalVersion, pattern.Status, pattern.ProjectId });
+}).RequireAuthorization(Permissions.StudioAccess);
+app.MapGet("/patterns/{patternId:guid}/technical-revisions", async (Guid patternId, StudioDbContext db, CancellationToken ct) =>
+{
+    if (!await db.Patterns.AnyAsync(x => x.Id == patternId, ct)) return Results.NotFound(new { code = "MDS-STUDIO-PATTERN-001", message = "Pattern not found." });
+    return Results.Ok(await db.PatternTechnicalRevisions.Where(x => x.PatternId == patternId).OrderByDescending(x => x.RecordedAt).Select(x => new { revisionId = x.Id, x.FilePath, x.Version, x.RecordedAt }).ToListAsync(ct));
 }).RequireAuthorization(Permissions.StudioAccess);
 app.MapGet("/projects", async (StudioDbContext db, CancellationToken ct) => Results.Ok(await db.Projects.OrderBy(x => x.Name).Select(x => new { projectId = x.Id, x.Name, x.LocalPath, x.Description, x.Status, x.CreatedAt }).ToListAsync(ct))).RequireAuthorization(Permissions.StudioAccess);
 app.MapPost("/projects", async (CreateProjectRequest request, ClaimsPrincipal user, StudioDbContext db, CancellationToken ct) =>
