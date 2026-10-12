@@ -130,7 +130,7 @@ app.MapGet("/patterns", async (Guid? projectId, StudioDbContext db, Cancellation
     join project in db.Projects on pattern.ProjectId equals project.Id
     where projectId == null || pattern.ProjectId == projectId
     orderby pattern.Name
-    select new { patternId = pattern.Id, pattern.Name, pattern.Notes, pattern.Status, pattern.ProjectId, projectName = project.Name, pattern.CreatedAt }
+    select new { patternId = pattern.Id, pattern.Name, pattern.Notes, pattern.TechnicalFilePath, pattern.TechnicalVersion, pattern.Status, pattern.ProjectId, projectName = project.Name, pattern.CreatedAt }
 ).ToListAsync(ct))).RequireAuthorization(Permissions.StudioAccess);
 app.MapPost("/patterns", async (CreatePatternRequest request, StudioDbContext db, CancellationToken ct) =>
 {
@@ -148,15 +148,17 @@ app.MapPut("/patterns/{patternId:guid}", async (Guid patternId, UpdatePatternReq
 {
     var name = request.Name?.Trim();
     var notes = request.Notes?.Trim();
-    if (request.ProjectId == Guid.Empty || string.IsNullOrWhiteSpace(name) || name.Length > 160 || notes?.Length > 2000 || !PatternRules.Statuses.Contains(request.Status))
+    var technicalFilePath = request.TechnicalFilePath?.Trim();
+    var technicalVersion = request.TechnicalVersion?.Trim();
+    if (request.ProjectId == Guid.Empty || string.IsNullOrWhiteSpace(name) || name.Length > 160 || notes?.Length > 2000 || technicalFilePath?.Length > 1024 || technicalVersion?.Length > 80 || !PatternRules.Statuses.Contains(request.Status))
         return Results.BadRequest(new { code = "MDS-STUDIO-PATTERN-001", message = "Pattern details are invalid." });
     var pattern = await db.Patterns.FindAsync([patternId], ct);
     if (pattern is null) return Results.NotFound(new { code = "MDS-STUDIO-PATTERN-001", message = "Pattern not found." });
     if (!await db.Projects.AnyAsync(x => x.Id == request.ProjectId, ct))
         return Results.BadRequest(new { code = "MDS-STUDIO-PATTERN-001", message = "The selected project does not exist." });
-    pattern.ProjectId = request.ProjectId; pattern.Name = name; pattern.Notes = notes; pattern.Status = request.Status;
+    pattern.ProjectId = request.ProjectId; pattern.Name = name; pattern.Notes = notes; pattern.TechnicalFilePath = technicalFilePath; pattern.TechnicalVersion = technicalVersion; pattern.Status = request.Status;
     await db.SaveChangesAsync(ct);
-    return Results.Ok(new { patternId = pattern.Id, pattern.Name, pattern.Notes, pattern.Status, pattern.ProjectId });
+    return Results.Ok(new { patternId = pattern.Id, pattern.Name, pattern.Notes, pattern.TechnicalFilePath, pattern.TechnicalVersion, pattern.Status, pattern.ProjectId });
 }).RequireAuthorization(Permissions.StudioAccess);
 app.MapGet("/projects", async (StudioDbContext db, CancellationToken ct) => Results.Ok(await db.Projects.OrderBy(x => x.Name).Select(x => new { projectId = x.Id, x.Name, x.LocalPath, x.Description, x.Status, x.CreatedAt }).ToListAsync(ct))).RequireAuthorization(Permissions.StudioAccess);
 app.MapPost("/projects", async (CreateProjectRequest request, ClaimsPrincipal user, StudioDbContext db, CancellationToken ct) =>
@@ -297,7 +299,7 @@ public sealed record CreateProjectRequest(string? Name, string? LocalPath);
 public sealed record CreateLibraryItemRequest(string? Name, string? Type, string? LocalPath, Guid? ProjectId);
 public sealed record UpdateLibraryItemRequest(string? Name, string? Type, string? LocalPath, Guid? ProjectId);
 public sealed record CreatePatternRequest(Guid ProjectId, string? Name, string? Notes, string Status);
-public sealed record UpdatePatternRequest(Guid ProjectId, string? Name, string? Notes, string Status);
+public sealed record UpdatePatternRequest(Guid ProjectId, string? Name, string? Notes, string? TechnicalFilePath, string? TechnicalVersion, string Status);
 public sealed record UpdateProjectRequest(string? Name, string? LocalPath, string? Description, string Status);
 public sealed record CreateProjectOrganizationItemRequest(string? Title, string? Notes, string Status);
 public sealed record UpdateProjectOrganizationItemRequest(string? Title, string? Notes, string Status);

@@ -32,6 +32,8 @@ public sealed class StudioPattern
     public Guid ProjectId { get; set; }
     public required string Name { get; set; }
     public string? Notes { get; set; }
+    public string? TechnicalFilePath { get; set; }
+    public string? TechnicalVersion { get; set; }
     public string Status { get; set; } = "Rascunho";
     public DateTimeOffset CreatedAt { get; init; }
 }

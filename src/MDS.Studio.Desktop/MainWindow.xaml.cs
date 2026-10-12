@@ -301,7 +301,7 @@ public partial class MainWindow : Window
 
         try
         {
-            var response = await studioClient.PutAsJsonAsync($"patterns/{pattern.PatternId}", new UpdatePatternRequest(project.ProjectId, name, ExistingPatternNotesInput.Text.Trim(), SelectedContent(ExistingPatternStatusInput, "Rascunho")));
+            var response = await studioClient.PutAsJsonAsync($"patterns/{pattern.PatternId}", new UpdatePatternRequest(project.ProjectId, name, ExistingPatternNotesInput.Text.Trim(), ExistingPatternTechnicalFilePathInput.Text.Trim(), ExistingPatternTechnicalVersionInput.Text.Trim(), SelectedContent(ExistingPatternStatusInput, "Rascunho")));
             if (!response.IsSuccessStatusCode)
             {
                 PatternsStatusText.Text = $"Não foi possível atualizar o molde (resposta {(int)response.StatusCode}).";
@@ -322,6 +322,8 @@ public partial class MainWindow : Window
         if (ExistingPatternSelector.SelectedItem is not StudioPattern pattern) return;
         ExistingPatternNameInput.Text = pattern.Name;
         ExistingPatternNotesInput.Text = pattern.Notes ?? string.Empty;
+        ExistingPatternTechnicalFilePathInput.Text = pattern.TechnicalFilePath ?? string.Empty;
+        ExistingPatternTechnicalVersionInput.Text = pattern.TechnicalVersion ?? string.Empty;
         ExistingPatternStatusInput.SelectedIndex = pattern.Status switch
         {
             "Em revisão" => 1,
@@ -377,7 +379,7 @@ public partial class MainWindow : Window
             ExistingPatternSelector.SelectedItem = null;
             PatternsListText.Text = patterns.Length == 0
                 ? "Nenhum molde registrado ainda."
-                : string.Join(Environment.NewLine + Environment.NewLine, patterns.Select(pattern => $"{pattern.Name} · {pattern.Status} · Projeto: {pattern.ProjectName}{(string.IsNullOrWhiteSpace(pattern.Notes) ? string.Empty : Environment.NewLine + pattern.Notes)}"));
+                : string.Join(Environment.NewLine + Environment.NewLine, patterns.Select(pattern => $"{pattern.Name} · {pattern.Status} · Projeto: {pattern.ProjectName}{(string.IsNullOrWhiteSpace(pattern.TechnicalFilePath) ? string.Empty : Environment.NewLine + $"Arquivo técnico: {pattern.TechnicalFilePath}{(string.IsNullOrWhiteSpace(pattern.TechnicalVersion) ? string.Empty : $" · Versão: {pattern.TechnicalVersion}")}")}{(string.IsNullOrWhiteSpace(pattern.Notes) ? string.Empty : Environment.NewLine + pattern.Notes)}"));
             PatternsStatusText.Text = patterns.Length == 0
                 ? "Nenhum molde encontrado para os filtros escolhidos."
                 : $"{patterns.Length} de {allPatterns.Length} molde(s) exibido(s).";
@@ -899,8 +901,8 @@ public partial class MainWindow : Window
     private sealed record UpdateLibraryItemRequest(string Name, string Type, string LocalPath, Guid? ProjectId);
     private sealed record LibraryItem(Guid AssetId, string OriginalName, string ContentType, string LocalPath, Guid? ProjectId, string? ProjectName, DateTimeOffset CreatedAt);
     private sealed record CreatePatternRequest(Guid ProjectId, string Name, string? Notes, string Status);
-    private sealed record StudioPattern(Guid PatternId, string Name, string? Notes, string Status, Guid ProjectId, string ProjectName, DateTimeOffset CreatedAt);
-    private sealed record UpdatePatternRequest(Guid ProjectId, string Name, string? Notes, string Status);
+    private sealed record StudioPattern(Guid PatternId, string Name, string? Notes, string? TechnicalFilePath, string? TechnicalVersion, string Status, Guid ProjectId, string ProjectName, DateTimeOffset CreatedAt);
+    private sealed record UpdatePatternRequest(Guid ProjectId, string Name, string? Notes, string? TechnicalFilePath, string? TechnicalVersion, string Status);
     private sealed record StudioProject(Guid ProjectId, string Name, string LocalPath, string? Description, string Status, DateTimeOffset CreatedAt);
     private sealed record UpdateProjectRequest(string Name, string LocalPath, string? Description, string Status);
     private sealed record CreateProjectOrganizationItemRequest(string Title, string? Notes, string Status);
