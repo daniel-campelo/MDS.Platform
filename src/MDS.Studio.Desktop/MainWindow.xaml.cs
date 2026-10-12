@@ -409,6 +409,20 @@ public partial class MainWindow : Window
     private void OpenPatternFile_Click(object sender, RoutedEventArgs e)
         => OpenLocalFile(ExistingPatternTechnicalFilePathInput.Text, "arquivo técnico", PatternsStatusText);
 
+    private void ChoosePatternTechnicalFile_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = "Escolher arquivo técnico do molde",
+            Filter = "Arquivos de molde|*.dst;*.pes;*.exp;*.jef;*.vp3|Todos os arquivos|*.*",
+            CheckFileExists = true,
+            Multiselect = false
+        };
+
+        if (dialog.ShowDialog() == true)
+            ExistingPatternTechnicalFilePathInput.Text = dialog.FileName;
+    }
+
     private async Task RefreshPatternTechnicalHistoryAsync(Guid patternId)
     {
         try
