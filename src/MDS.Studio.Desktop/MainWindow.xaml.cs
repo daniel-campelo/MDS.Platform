@@ -768,7 +768,9 @@ public partial class MainWindow : Window
 
             var allProjects = await response.Content.ReadFromJsonAsync<StudioProject[]>() ?? [];
             var selectedStatus = SelectedContent(ProjectFilterStatusInput, "Todas");
+            var searchTerm = ProjectSearchInput.Text.Trim();
             var projects = allProjects
+                .Where(project => string.IsNullOrWhiteSpace(searchTerm) || project.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
                 .Where(project => selectedStatus == "Todas" || project.Status == selectedStatus)
                 .ToArray();
             ProjectSelector.ItemsSource = projects;
