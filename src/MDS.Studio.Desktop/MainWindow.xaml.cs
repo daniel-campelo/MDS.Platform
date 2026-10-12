@@ -84,6 +84,7 @@ public partial class MainWindow : Window
             ProjectDetailsPanel.Visibility = Visibility.Collapsed;
             LibraryPanel.Visibility = Visibility.Collapsed;
             PatternsPanel.Visibility = Visibility.Collapsed;
+            SettingsPanel.Visibility = Visibility.Collapsed;
             currentProjectId = null;
             DiagnosticsPanel.Visibility = Visibility.Collapsed;
             HomePanel.Visibility = Visibility.Visible;
@@ -151,8 +152,32 @@ public partial class MainWindow : Window
         ProjectDetailsPanel.Visibility = Visibility.Collapsed;
         LibraryPanel.Visibility = Visibility.Collapsed;
         PatternsPanel.Visibility = Visibility.Collapsed;
+        SettingsPanel.Visibility = Visibility.Collapsed;
         currentProjectId = null;
         HomePanel.Visibility = Visibility.Visible;
+    }
+
+    private void Settings_Click(object sender, RoutedEventArgs e)
+    {
+        HomePanel.Visibility = Visibility.Collapsed;
+        DiagnosticsPanel.Visibility = Visibility.Collapsed;
+        ProjectsPanel.Visibility = Visibility.Collapsed;
+        ProjectDetailsPanel.Visibility = Visibility.Collapsed;
+        LibraryPanel.Visibility = Visibility.Collapsed;
+        PatternsPanel.Visibility = Visibility.Collapsed;
+        SettingsPanel.Visibility = Visibility.Visible;
+        RefreshSettings();
+    }
+
+    private void RefreshSettings_Click(object sender, RoutedEventArgs e) => RefreshSettings();
+
+    private void RefreshSettings()
+    {
+        SettingsCoreUrlText.Text = CoreUrlInput.Text.Trim();
+        SettingsStudioUrlText.Text = StudioUrlInput.Text.Trim();
+        SettingsStatusText.Text = string.IsNullOrWhiteSpace(sessionToken)
+            ? "Sessão não iniciada. Entre pelo início para usar o MDS Core."
+            : $"Sessão atual: {currentUsername ?? "usuário identificado"}.";
     }
 
     private async void Diagnostics_Click(object sender, RoutedEventArgs e)
@@ -166,6 +191,7 @@ public partial class MainWindow : Window
         }
 
         HomePanel.Visibility = Visibility.Collapsed;
+        SettingsPanel.Visibility = Visibility.Collapsed;
         ProjectsPanel.Visibility = Visibility.Collapsed;
         LibraryPanel.Visibility = Visibility.Collapsed;
         PatternsPanel.Visibility = Visibility.Collapsed;
@@ -187,6 +213,7 @@ public partial class MainWindow : Window
 
         HomePanel.Visibility = Visibility.Collapsed;
         DiagnosticsPanel.Visibility = Visibility.Collapsed;
+        SettingsPanel.Visibility = Visibility.Collapsed;
         LibraryPanel.Visibility = Visibility.Collapsed;
         PatternsPanel.Visibility = Visibility.Collapsed;
         ProjectsPanel.Visibility = Visibility.Visible;
@@ -209,6 +236,7 @@ public partial class MainWindow : Window
 
         HomePanel.Visibility = Visibility.Collapsed;
         DiagnosticsPanel.Visibility = Visibility.Collapsed;
+        SettingsPanel.Visibility = Visibility.Collapsed;
         ProjectsPanel.Visibility = Visibility.Collapsed;
         ProjectDetailsPanel.Visibility = Visibility.Collapsed;
         LibraryPanel.Visibility = Visibility.Visible;
@@ -231,6 +259,7 @@ public partial class MainWindow : Window
 
         HomePanel.Visibility = Visibility.Collapsed;
         DiagnosticsPanel.Visibility = Visibility.Collapsed;
+        SettingsPanel.Visibility = Visibility.Collapsed;
         ProjectsPanel.Visibility = Visibility.Collapsed;
         ProjectDetailsPanel.Visibility = Visibility.Collapsed;
         LibraryPanel.Visibility = Visibility.Collapsed;

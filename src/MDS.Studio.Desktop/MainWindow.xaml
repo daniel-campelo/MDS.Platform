@@ -13,7 +13,7 @@
    <Button Style="{StaticResource NavigationButton}" Content="Biblioteca" Click="Library_Click"/>
    <Button Style="{StaticResource NavigationButton}" Content="Moldes" Click="Patterns_Click"/>
    <Button Style="{StaticResource NavigationButton}" Content="Diagnóstico" Click="Diagnostics_Click"/>
-   <Border BorderBrush="#334155" BorderThickness="0,1,0,0" Margin="20,22,20,0" Padding="0,16,0,0"><StackPanel><TextBlock Text="CONFIGURAÇÕES" Foreground="#64748B" FontSize="10" FontWeight="SemiBold"/><TextBlock Text="Em breve" Foreground="#94A3B8" FontSize="13" Margin="0,6,0,0"/></StackPanel></Border>
+   <Border BorderBrush="#334155" BorderThickness="0,1,0,0" Margin="20,22,20,0" Padding="0,16,0,0"><StackPanel><TextBlock Text="CONFIGURAÇÕES" Foreground="#64748B" FontSize="10" FontWeight="SemiBold"/><Button Style="{StaticResource NavigationButton}" Content="Conexões do Studio" Margin="-20,6,-20,0" Click="Settings_Click"/></StackPanel></Border>
   </StackPanel>
   <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Background="#F5F7FB"><StackPanel Margin="42,34,42,42">
    <StackPanel x:Name="HomePanel"><Border Background="#FFF4CE" Padding="12"><TextBlock Text="🧪 MDS STUDIO — HOMOLOGAÇÃO" FontWeight="Bold"/></Border>
@@ -46,6 +46,16 @@
      <StackPanel Orientation="Horizontal" Margin="0,22,0,0"><Button Content="Atualizar diagnóstico" Padding="14,7" Click="RefreshDiagnostics_Click"/><Button Content="Voltar ao início" Margin="12,0,0,0" Padding="14,7" Background="#E2E8F0" Foreground="#334155" BorderBrush="#CBD5E1" Click="Home_Click"/></StackPanel>
     </StackPanel></Border>
     <TextBlock x:Name="DiagnosticStatusText" Margin="0,18,0,0" TextWrapping="Wrap" Foreground="#34495E"/>
+   </StackPanel>
+   <StackPanel x:Name="SettingsPanel" Visibility="Collapsed"><Border Background="#E0E7FF" Padding="14" CornerRadius="6"><TextBlock Text="CONFIGURAÇÕES — HOMOLOGAÇÃO" Foreground="#3730A3" FontWeight="Bold"/></Border>
+    <TextBlock Text="Conexões do Studio" FontSize="30" FontWeight="SemiBold" Foreground="#0F3D75" Margin="0,30,0,4"/><TextBlock Text="Consulte os endereços usados nesta sessão. Alterações de conexão continuam sendo feitas na tela de entrada." Foreground="#64748B" TextWrapping="Wrap"/>
+    <Border Background="White" BorderBrush="#DCE6F2" BorderThickness="1" CornerRadius="8" Padding="22" Margin="0,28,0,0"><StackPanel>
+     <TextBlock Text="MDS Core" Foreground="#64748B" FontSize="11" FontWeight="SemiBold"/><TextBlock x:Name="SettingsCoreUrlText" Margin="0,8,0,18" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap"/>
+     <TextBlock Text="API do Studio" Foreground="#64748B" FontSize="11" FontWeight="SemiBold"/><TextBlock x:Name="SettingsStudioUrlText" Margin="0,8,0,18" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap"/>
+     <TextBlock Text="AMBIENTE" Foreground="#64748B" FontSize="11" FontWeight="SemiBold"/><TextBlock Text="Homologação (Staging)" Margin="0,8,0,0" FontSize="15" FontWeight="SemiBold"/>
+     <StackPanel Orientation="Horizontal" Margin="0,24,0,0"><Button Content="Atualizar informações" Padding="14,7" Click="RefreshSettings_Click"/><Button Content="Voltar ao início" Margin="12,0,0,0" Padding="14,7" Background="#E2E8F0" Foreground="#334155" BorderBrush="#CBD5E1" Click="Home_Click"/></StackPanel>
+    </StackPanel></Border>
+    <TextBlock x:Name="SettingsStatusText" Margin="0,18,0,0" Foreground="#475569" TextWrapping="Wrap"/>
    </StackPanel>
    <StackPanel x:Name="ProjectsPanel" Visibility="Collapsed"><Border Background="#DBEAFE" Padding="14" CornerRadius="6"><TextBlock Text="PROJETOS — HOMOLOGAÇÃO" Foreground="#1E3A8A" FontWeight="Bold"/></Border>
     <TextBlock Text="Projetos" FontSize="30" FontWeight="SemiBold" Foreground="#0F3D75" Margin="0,30,0,4"/><TextBlock Text="Cadastre um nome e a pasta local do projeto. Nenhum molde, produto ou dado de produção é criado nesta etapa." Foreground="#64748B" TextWrapping="Wrap"/>
