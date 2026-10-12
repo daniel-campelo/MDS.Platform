@@ -4,15 +4,16 @@
   <Style TargetType="TextBox"><Setter Property="Background" Value="White"/><Setter Property="BorderBrush" Value="#CBD5E1"/><Setter Property="BorderThickness" Value="1"/><Setter Property="Padding" Value="9"/></Style>
   <Style TargetType="PasswordBox"><Setter Property="Background" Value="White"/><Setter Property="BorderBrush" Value="#CBD5E1"/><Setter Property="BorderThickness" Value="1"/><Setter Property="Padding" Value="9"/></Style>
   <Style TargetType="ComboBox"><Setter Property="Background" Value="White"/><Setter Property="BorderBrush" Value="#CBD5E1"/><Setter Property="BorderThickness" Value="1"/><Setter Property="Padding" Value="7"/><Setter Property="MinHeight" Value="34"/></Style>
+  <Style x:Key="NavigationButton" TargetType="Button"><Setter Property="Background" Value="Transparent"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderThickness" Value="0"/><Setter Property="FontSize" Value="15"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="HorizontalContentAlignment" Value="Left"/><Setter Property="Padding" Value="20,10"/><Setter Property="Cursor" Value="Hand"/><Style.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="#1E293B"/></Trigger><Trigger Property="IsPressed" Value="True"><Setter Property="Background" Value="#334155"/></Trigger></Style.Triggers></Style>
  </Window.Resources>
  <Grid Background="#F5F7FB"><Grid.ColumnDefinitions><ColumnDefinition Width="220"/><ColumnDefinition/></Grid.ColumnDefinitions>
   <StackPanel Background="#0F172A"><TextBlock Text="MDS STUDIO" Foreground="White" FontSize="21" FontWeight="SemiBold" Margin="24,28,20,8"/><TextBlock Text="GESTÃO DE CRIAÇÃO" Foreground="#94A3B8" FontSize="10" FontWeight="SemiBold" Margin="24,0,20,24"/>
-   <Button Content="Início" HorizontalContentAlignment="Left" Foreground="White" Background="Transparent" BorderThickness="0" FontSize="15" Padding="20,8" Click="Home_Click"/>
-   <Button Content="Projetos" HorizontalContentAlignment="Left" Foreground="White" Background="Transparent" BorderThickness="0" FontSize="15" Padding="20,8" Click="Projects_Click"/>
-   <Button Content="Biblioteca" HorizontalContentAlignment="Left" Foreground="White" Background="Transparent" BorderThickness="0" FontSize="15" Padding="20,8" Click="Library_Click"/>
-   <Button Content="Moldes" HorizontalContentAlignment="Left" Foreground="White" Background="Transparent" BorderThickness="0" FontSize="15" Padding="20,8" Click="Patterns_Click"/>
-   <Button Content="Diagnóstico" HorizontalContentAlignment="Left" Foreground="White" Background="Transparent" BorderThickness="0" FontSize="15" Padding="20,8" Click="Diagnostics_Click"/>
-   <TextBlock Text="Configurações" Foreground="#94A3B8" FontSize="15" Margin="20,18,20,8"/>
+   <Button Style="{StaticResource NavigationButton}" Content="Início" Click="Home_Click"/>
+   <Button Style="{StaticResource NavigationButton}" Content="Projetos" Click="Projects_Click"/>
+   <Button Style="{StaticResource NavigationButton}" Content="Biblioteca" Click="Library_Click"/>
+   <Button Style="{StaticResource NavigationButton}" Content="Moldes" Click="Patterns_Click"/>
+   <Button Style="{StaticResource NavigationButton}" Content="Diagnóstico" Click="Diagnostics_Click"/>
+   <Border BorderBrush="#334155" BorderThickness="0,1,0,0" Margin="20,22,20,0" Padding="0,16,0,0"><StackPanel><TextBlock Text="CONFIGURAÇÕES" Foreground="#64748B" FontSize="10" FontWeight="SemiBold"/><TextBlock Text="Em breve" Foreground="#94A3B8" FontSize="13" Margin="0,6,0,0"/></StackPanel></Border>
   </StackPanel>
   <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Background="#F5F7FB"><StackPanel Margin="42,34,42,42">
    <StackPanel x:Name="HomePanel"><Border Background="#FFF4CE" Padding="12"><TextBlock Text="🧪 MDS STUDIO — HOMOLOGAÇÃO" FontWeight="Bold"/></Border>
