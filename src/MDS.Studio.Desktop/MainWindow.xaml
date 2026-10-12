@@ -26,11 +26,13 @@
      <Button x:Name="SignInButton" Content="Entrar" Width="112" HorizontalAlignment="Left" Padding="14,7" Click="SignIn_Click"/>
     </StackPanel>
    </Border>
-   <Border x:Name="SessionPanel" Visibility="Collapsed" Background="#E9F7EF" BorderBrush="#A9DFBF" BorderThickness="1" CornerRadius="6" Padding="20" Margin="0,28,0,0">
-    <StackPanel><TextBlock Text="Sessão do MDS Core ativa" FontSize="20" FontWeight="SemiBold"/><TextBlock x:Name="UserNameText" FontSize="16" Margin="0,12,0,3"/><TextBlock x:Name="RoleText" Foreground="#34495E"/><TextBlock x:Name="PermissionText" TextWrapping="Wrap" Foreground="#34495E" Margin="0,6,0,18"/>
-     <Border Background="White" BorderBrush="#D5DBDB" BorderThickness="1" Padding="12" Margin="0,0,0,16"><StackPanel><TextBlock Text="Estado do Studio" FontWeight="SemiBold"/><TextBlock x:Name="StudioStatusText" Margin="0,6,0,2"/><TextBlock x:Name="AgentStatusText" TextWrapping="Wrap" Foreground="#34495E"/></StackPanel></Border>
-     <Border Background="White" BorderBrush="#D5DBDB" BorderThickness="1" Padding="12" Margin="0,0,0,16"><StackPanel><TextBlock Text="Resumo do Studio" FontWeight="SemiBold"/><TextBlock x:Name="WorkspaceSummaryText" Margin="0,6,0,0" TextWrapping="Wrap" Foreground="#34495E"/></StackPanel></Border>
-     <StackPanel Orientation="Horizontal"><Button Content="Atualizar status" Padding="14,7" Click="RefreshStatus_Click"/><Button Content="Sair" Width="112" Margin="12,0,0,0" Padding="14,7" Click="SignOut_Click"/></StackPanel>
+   <Border x:Name="SessionPanel" Visibility="Collapsed" Background="White" BorderBrush="#BFDBFE" BorderThickness="1" CornerRadius="8" Padding="22" Margin="0,28,0,0">
+    <StackPanel><TextBlock Text="Sessão do MDS Core ativa" FontSize="20" FontWeight="SemiBold" Foreground="#0F3D75"/><TextBlock x:Name="UserNameText" FontSize="16" FontWeight="SemiBold" Margin="0,12,0,3"/><TextBlock x:Name="RoleText" Foreground="#475569"/><TextBlock x:Name="PermissionText" TextWrapping="Wrap" Foreground="#475569" Margin="0,6,0,20"/>
+     <Grid Margin="0,0,0,20"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+      <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="16" Margin="0,0,8,0"><StackPanel><TextBlock Text="ESTADO DO STUDIO" Foreground="#64748B" FontSize="11" FontWeight="SemiBold"/><TextBlock x:Name="StudioStatusText" Margin="0,10,0,4" FontWeight="SemiBold"/><TextBlock x:Name="AgentStatusText" TextWrapping="Wrap" Foreground="#475569"/></StackPanel></Border>
+      <Border Grid.Column="1" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="16" Margin="8,0,0,0"><StackPanel><TextBlock Text="RESUMO DO STUDIO" Foreground="#64748B" FontSize="11" FontWeight="SemiBold"/><TextBlock x:Name="WorkspaceSummaryText" Margin="0,10,0,0" TextWrapping="Wrap" FontSize="15" FontWeight="SemiBold" Foreground="#0F172A"/></StackPanel></Border>
+     </Grid>
+     <StackPanel Orientation="Horizontal"><Button Content="Atualizar status" Click="RefreshStatus_Click"/><Button Content="Sair" Width="112" Margin="12,0,0,0" Background="#E2E8F0" Foreground="#334155" BorderBrush="#CBD5E1" Click="SignOut_Click"/></StackPanel>
     </StackPanel>
    </Border>
    <TextBlock x:Name="StatusText" Margin="0,18,0,0" TextWrapping="Wrap" Foreground="#34495E"/>
