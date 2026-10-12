@@ -908,6 +908,29 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ChooseNewProjectFolder_Click(object sender, RoutedEventArgs e)
+    {
+        if (TryChooseProjectFolder(out var folder)) ProjectPathInput.Text = folder;
+    }
+
+    private void ChooseExistingProjectFolder_Click(object sender, RoutedEventArgs e)
+    {
+        if (TryChooseProjectFolder(out var folder)) ProjectDetailsPathInput.Text = folder;
+    }
+
+    private static bool TryChooseProjectFolder(out string folder)
+    {
+        var dialog = new OpenFolderDialog { Title = "Escolher pasta do projeto", Multiselect = false };
+        if (dialog.ShowDialog() == true)
+        {
+            folder = dialog.FolderName;
+            return true;
+        }
+
+        folder = string.Empty;
+        return false;
+    }
+
     private async void AddOrganizationItem_Click(object sender, RoutedEventArgs e)
     {
         if (currentProjectId is null) return;
