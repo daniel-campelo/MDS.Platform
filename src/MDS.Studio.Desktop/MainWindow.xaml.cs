@@ -1,6 +1,8 @@
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Diagnostics;
+using System.IO;
 using System.Windows;
 
 namespace MDS.Studio.Desktop;
@@ -364,6 +366,9 @@ public partial class MainWindow : Window
         await RefreshPatternTechnicalHistoryAsync(pattern.PatternId);
     }
 
+    private void OpenPatternFile_Click(object sender, RoutedEventArgs e)
+        => OpenLocalFile(ExistingPatternTechnicalFilePathInput.Text, "arquivo técnico", PatternsStatusText);
+
     private async Task RefreshPatternTechnicalHistoryAsync(Guid patternId)
     {
         try
@@ -513,6 +518,35 @@ public partial class MainWindow : Window
         SelectLibraryType(item.ContentType);
         if (LibraryExistingProjectSelector.ItemsSource is IEnumerable<StudioProject> projects)
             LibraryExistingProjectSelector.SelectedItem = projects.FirstOrDefault(project => project.ProjectId == item.ProjectId);
+    }
+
+    private void OpenLibraryFile_Click(object sender, RoutedEventArgs e)
+        => OpenLocalFile(LibraryExistingPathInput.Text, "referência", LibraryStatusText);
+
+    private static void OpenLocalFile(string filePath, string label, System.Windows.Controls.TextBlock statusText)
+    {
+        var path = filePath.Trim();
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            statusText.Text = $"Informe o caminho local da {label}.";
+            return;
+        }
+
+        if (!File.Exists(path))
+        {
+            statusText.Text = $"O arquivo da {label} não foi encontrado no caminho informado.";
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+            statusText.Text = $"Abrindo {label} no programa padrão do Windows.";
+        }
+        catch (Exception)
+        {
+            statusText.Text = $"Não foi possível abrir a {label} no programa padrão do Windows.";
+        }
     }
 
     private async Task RefreshLibraryAsync()
