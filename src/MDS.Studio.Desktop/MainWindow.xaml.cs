@@ -4,6 +4,8 @@ using System.Net.Http.Json;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace MDS.Studio.Desktop;
@@ -773,6 +775,7 @@ public partial class MainWindow : Window
             SelectProjectStatus(project.Status);
             ProjectDetailsPanel.Visibility = Visibility.Visible;
             await RefreshProjectLinksAsync();
+            await RefreshProjectVisualReferencesAsync();
             await RefreshOrganizationAsync();
         }
         catch (HttpRequestException)
@@ -805,6 +808,7 @@ public partial class MainWindow : Window
             ProjectsStatusText.Text = "Detalhes salvos.";
             await RefreshProjectsAsync();
             await RefreshProjectLinksAsync();
+            await RefreshProjectVisualReferencesAsync();
         }
         catch (HttpRequestException)
         {
@@ -912,6 +916,70 @@ public partial class MainWindow : Window
         {
             ProjectLibraryListText.Text = "Não foi possível consultar as referências vinculadas.";
             ProjectPatternsListText.Text = "Não foi possível consultar os moldes vinculados.";
+        }
+    }
+
+    private async Task RefreshProjectVisualReferencesAsync()
+    {
+        if (currentProjectId is null) return;
+        ProjectVisualReferencesPanel.Children.Clear();
+        ProjectVisualReferencesStatusText.Text = string.Empty;
+
+        try
+        {
+            var response = await studioClient.GetAsync("library");
+            if (!response.IsSuccessStatusCode)
+            {
+                ProjectVisualReferencesStatusText.Text = "Não foi possível consultar as referências visuais.";
+                return;
+            }
+
+            var projectPath = ProjectDetailsPathInput.Text.Trim().TrimEnd('\\') + "\\";
+            var visualReferences = (await response.Content.ReadFromJsonAsync<LibraryItem[]>() ?? [])
+                .Where(item => string.Equals(item.ContentType, "Imagem", StringComparison.OrdinalIgnoreCase))
+                .Where(item => item.ProjectId == currentProjectId || item.LocalPath.StartsWith(projectPath, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+
+            var shown = 0;
+            foreach (var reference in visualReferences)
+            {
+                if (!File.Exists(reference.LocalPath)) continue;
+                try
+                {
+                    var bitmap = new BitmapImage();
+                    bitmap.BeginInit();
+                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                    bitmap.UriSource = new Uri(reference.LocalPath, UriKind.Absolute);
+                    bitmap.EndInit();
+                    bitmap.Freeze();
+
+                    var card = new Border
+                    {
+                        Width = 180,
+                        Background = Brushes.White,
+                        BorderBrush = new SolidColorBrush(Color.FromRgb(220, 230, 242)),
+                        BorderThickness = new Thickness(1),
+                        CornerRadius = new CornerRadius(6),
+                        Padding = new Thickness(10),
+                        Margin = new Thickness(0, 0, 12, 12)
+                    };
+                    var content = new StackPanel();
+                    content.Children.Add(new Image { Source = bitmap, Height = 120, Stretch = Stretch.Uniform });
+                    content.Children.Add(new TextBlock { Text = reference.OriginalName, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 9, 0, 0), FontWeight = FontWeights.SemiBold });
+                    card.Child = content;
+                    ProjectVisualReferencesPanel.Children.Add(card);
+                    shown++;
+                }
+                catch (Exception) { }
+            }
+
+            ProjectVisualReferencesStatusText.Text = shown > 0
+                ? $"{shown} referência(s) visual(is) disponível(is) para consulta."
+                : "Nenhuma imagem disponível para este projeto. Vincule uma imagem na Biblioteca ou registre uma imagem dentro da pasta do projeto.";
+        }
+        catch (HttpRequestException)
+        {
+            ProjectVisualReferencesStatusText.Text = "Não foi possível alcançar a API do Studio para carregar as referências visuais.";
         }
     }
 
