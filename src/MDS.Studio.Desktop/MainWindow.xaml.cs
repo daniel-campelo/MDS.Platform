@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Microsoft.Win32;
 
 namespace MDS.Studio.Desktop;
 
@@ -593,6 +594,40 @@ public partial class MainWindow : Window
 
     private void OpenLibraryFile_Click(object sender, RoutedEventArgs e)
         => OpenLocalFile(LibraryExistingPathInput.Text, "referência", LibraryStatusText);
+
+    private void ChooseNewLibraryImage_Click(object sender, RoutedEventArgs e)
+    {
+        if (!TryChooseImage(out var path)) return;
+        LibraryPathInput.Text = path;
+        LibraryTypeInput.SelectedIndex = 1;
+    }
+
+    private void ChooseExistingLibraryImage_Click(object sender, RoutedEventArgs e)
+    {
+        if (!TryChooseImage(out var path)) return;
+        LibraryExistingPathInput.Text = path;
+        LibraryExistingTypeInput.SelectedIndex = 1;
+    }
+
+    private static bool TryChooseImage(out string path)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = "Escolher imagem",
+            Filter = "Imagens|*.png;*.jpg;*.jpeg;*.bmp;*.gif|Todos os arquivos|*.*",
+            CheckFileExists = true,
+            Multiselect = false
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            path = dialog.FileName;
+            return true;
+        }
+
+        path = string.Empty;
+        return false;
+    }
 
     private static void OpenLocalFile(string filePath, string label, System.Windows.Controls.TextBlock statusText)
     {
