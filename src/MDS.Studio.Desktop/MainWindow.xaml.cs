@@ -1001,7 +1001,16 @@ public partial class MainWindow : Window
                     var content = new StackPanel();
                     content.Children.Add(new Image { Source = bitmap, Height = 120, Stretch = Stretch.Uniform });
                     content.Children.Add(new TextBlock { Text = reference.OriginalName, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 9, 0, 0), FontWeight = FontWeights.SemiBold });
-                    card.Child = content;
+                    var openImageButton = new Button
+                    {
+                        Content = content,
+                        Background = Brushes.Transparent,
+                        BorderThickness = new Thickness(0),
+                        Padding = new Thickness(0),
+                        ToolTip = "Clique para ampliar a imagem"
+                    };
+                    openImageButton.Click += (_, _) => ShowVisualReference(reference.OriginalName, bitmap);
+                    card.Child = openImageButton;
                     ProjectVisualReferencesPanel.Children.Add(card);
                     shown++;
                 }
@@ -1016,6 +1025,30 @@ public partial class MainWindow : Window
         {
             ProjectVisualReferencesStatusText.Text = "Não foi possível alcançar a API do Studio para carregar as referências visuais.";
         }
+    }
+
+    private void ShowVisualReference(string title, BitmapImage image)
+    {
+        var preview = new Window
+        {
+            Title = title,
+            Owner = this,
+            Width = 900,
+            Height = 700,
+            MinWidth = 420,
+            MinHeight = 320,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Background = Brushes.White,
+            Content = new ScrollViewer
+            {
+                Padding = new Thickness(20),
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                Content = new Image { Source = image, Stretch = Stretch.Uniform }
+            }
+        };
+
+        preview.ShowDialog();
     }
 
     private async void UpdateOrganizationItem_Click(object sender, RoutedEventArgs e)
