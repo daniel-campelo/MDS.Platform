@@ -26,6 +26,19 @@ public sealed class ProjectOrganizationItem
     public DateTimeOffset CreatedAt { get; init; }
 }
 
+public sealed class ProjectGarmentBrief
+{
+    public Guid ProjectId { get; init; }
+    public string? GarmentType { get; set; }
+    public string? Model { get; set; }
+    public string? Fabric { get; set; }
+    public string? Colors { get; set; }
+    public string? SizeRange { get; set; }
+    public int? Quantity { get; set; }
+    public string? Notes { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; }
+}
+
 public sealed class StudioPattern
 {
     public Guid Id { get; init; } = Guid.NewGuid();

@@ -963,6 +963,7 @@ public partial class MainWindow : Window
             SelectProjectStatus(project.Status);
             ProjectDetailsPanel.Visibility = Visibility.Visible;
             await RefreshProjectLinksAsync();
+            await RefreshGarmentBriefAsync();
             await RefreshProjectVisualReferencesAsync();
             await RefreshOrganizationAsync();
         }
@@ -1017,6 +1018,54 @@ public partial class MainWindow : Window
         {
             ProjectsStatusText.Text = "Não foi possível alcançar a API do Studio.";
         }
+    }
+
+    private async void SaveGarmentBrief_Click(object sender, RoutedEventArgs e)
+    {
+        if (currentProjectId is null) return;
+        int? quantity = null;
+        if (!string.IsNullOrWhiteSpace(GarmentQuantityInput.Text))
+        {
+            if (!int.TryParse(GarmentQuantityInput.Text.Trim(), out var parsedQuantity) || parsedQuantity < 0)
+            {
+                ProjectsStatusText.Text = "Informe uma quantidade inteira igual ou maior que zero.";
+                return;
+            }
+            quantity = parsedQuantity;
+        }
+
+        try
+        {
+            var request = new UpdateProjectGarmentBriefRequest(GarmentTypeInput.Text.Trim(), GarmentModelInput.Text.Trim(), GarmentFabricInput.Text.Trim(), GarmentColorsInput.Text.Trim(), GarmentSizesInput.Text.Trim(), quantity, GarmentNotesInput.Text.Trim());
+            var response = await studioClient.PutAsJsonAsync($"projects/{currentProjectId}/garment-brief", request);
+            ProjectsStatusText.Text = response.IsSuccessStatusCode
+                ? "Ficha técnica da peça salva."
+                : $"Não foi possível salvar a ficha técnica (resposta {(int)response.StatusCode}).";
+        }
+        catch (HttpRequestException)
+        {
+            ProjectsStatusText.Text = "Não foi possível alcançar a API do Studio.";
+        }
+    }
+
+    private async Task RefreshGarmentBriefAsync()
+    {
+        if (currentProjectId is null) return;
+        try
+        {
+            var response = await studioClient.GetAsync($"projects/{currentProjectId}/garment-brief");
+            if (!response.IsSuccessStatusCode) return;
+            var brief = await response.Content.ReadFromJsonAsync<ProjectGarmentBrief>();
+            if (brief is null) return;
+            GarmentTypeInput.Text = brief.GarmentType ?? string.Empty;
+            GarmentModelInput.Text = brief.Model ?? string.Empty;
+            GarmentFabricInput.Text = brief.Fabric ?? string.Empty;
+            GarmentColorsInput.Text = brief.Colors ?? string.Empty;
+            GarmentSizesInput.Text = brief.SizeRange ?? string.Empty;
+            GarmentQuantityInput.Text = brief.Quantity?.ToString() ?? string.Empty;
+            GarmentNotesInput.Text = brief.Notes ?? string.Empty;
+        }
+        catch (HttpRequestException) { }
     }
 
     private void OpenProjectFolder_Click(object sender, RoutedEventArgs e)
@@ -1519,6 +1568,8 @@ public partial class MainWindow : Window
     private sealed record PatternTechnicalRevision(Guid RevisionId, string FilePath, string Version, DateTimeOffset RecordedAt);
     private sealed record StudioProject(Guid ProjectId, string Name, string LocalPath, string? Description, string Status, DateTimeOffset CreatedAt);
     private sealed record UpdateProjectRequest(string Name, string LocalPath, string? Description, string Status);
+    private sealed record UpdateProjectGarmentBriefRequest(string GarmentType, string Model, string Fabric, string Colors, string SizeRange, int? Quantity, string Notes);
+    private sealed record ProjectGarmentBrief(string? GarmentType, string? Model, string? Fabric, string? Colors, string? SizeRange, int? Quantity, string? Notes);
     private sealed record CreateProjectOrganizationItemRequest(string Title, string? Notes, string Status);
     private sealed record ProjectOrganizationItem(Guid ItemId, string Title, string? Notes, string Status, DateTimeOffset CreatedAt);
     private sealed record UpdateProjectOrganizationItemRequest(string Title, string? Notes, string Status);

@@ -199,6 +199,35 @@ app.MapPut("/projects/{projectId:guid}", async (Guid projectId, UpdateProjectReq
     await db.SaveChangesAsync(ct);
     return Results.Ok(new { projectId = project.Id, project.Name, project.LocalPath, project.Description, project.Status, project.CreatedAt });
 }).RequireAuthorization(Permissions.StudioAccess);
+app.MapGet("/projects/{projectId:guid}/garment-brief", async (Guid projectId, StudioDbContext db, CancellationToken ct) =>
+{
+    if (!await db.Projects.AnyAsync(x => x.Id == projectId, ct)) return Results.NotFound(new { code = "MDS-STUDIO-PROJECT-001", message = "Project not found." });
+    var brief = await db.ProjectGarmentBriefs.FindAsync([projectId], ct);
+    return Results.Ok(new
+    {
+        projectId,
+        garmentType = brief?.GarmentType,
+        model = brief?.Model,
+        fabric = brief?.Fabric,
+        colors = brief?.Colors,
+        sizeRange = brief?.SizeRange,
+        quantity = brief?.Quantity,
+        notes = brief?.Notes,
+        updatedAt = brief?.UpdatedAt
+    });
+}).RequireAuthorization(Permissions.StudioAccess);
+app.MapPut("/projects/{projectId:guid}/garment-brief", async (Guid projectId, UpdateProjectGarmentBriefRequest request, StudioDbContext db, CancellationToken ct) =>
+{
+    if (!await db.Projects.AnyAsync(x => x.Id == projectId, ct)) return Results.NotFound(new { code = "MDS-STUDIO-PROJECT-001", message = "Project not found." });
+    var garmentType = request.GarmentType?.Trim(); var model = request.Model?.Trim(); var fabric = request.Fabric?.Trim(); var colors = request.Colors?.Trim(); var sizeRange = request.SizeRange?.Trim(); var notes = request.Notes?.Trim();
+    if (garmentType?.Length > 100 || model?.Length > 160 || fabric?.Length > 160 || colors?.Length > 300 || sizeRange?.Length > 160 || notes?.Length > 2000 || request.Quantity is < 0 or > 100000)
+        return Results.BadRequest(new { code = "MDS-STUDIO-PROJECT-003", message = "Garment brief is invalid." });
+    var brief = await db.ProjectGarmentBriefs.FindAsync([projectId], ct);
+    if (brief is null) { brief = new ProjectGarmentBrief { ProjectId = projectId }; db.ProjectGarmentBriefs.Add(brief); }
+    brief.GarmentType = garmentType; brief.Model = model; brief.Fabric = fabric; brief.Colors = colors; brief.SizeRange = sizeRange; brief.Quantity = request.Quantity; brief.Notes = notes; brief.UpdatedAt = DateTimeOffset.UtcNow;
+    await db.SaveChangesAsync(ct);
+    return Results.Ok(new { projectId, brief.GarmentType, brief.Model, brief.Fabric, brief.Colors, brief.SizeRange, brief.Quantity, brief.Notes, brief.UpdatedAt });
+}).RequireAuthorization(Permissions.StudioAccess);
 app.MapGet("/projects/{projectId:guid}/organization", async (Guid projectId, StudioDbContext db, CancellationToken ct) =>
 {
     if (!await db.Projects.AnyAsync(x => x.Id == projectId, ct)) return Results.NotFound(new { code = "MDS-STUDIO-PROJECT-001", message = "Project not found." });
@@ -308,6 +337,7 @@ public sealed record UpdateLibraryItemRequest(string? Name, string? Type, string
 public sealed record CreatePatternRequest(Guid ProjectId, string? Name, string? Notes, string Status);
 public sealed record UpdatePatternRequest(Guid ProjectId, string? Name, string? Notes, string? TechnicalFilePath, string? TechnicalVersion, string Status);
 public sealed record UpdateProjectRequest(string? Name, string? LocalPath, string? Description, string Status);
+public sealed record UpdateProjectGarmentBriefRequest(string? GarmentType, string? Model, string? Fabric, string? Colors, string? SizeRange, int? Quantity, string? Notes);
 public sealed record CreateProjectOrganizationItemRequest(string? Title, string? Notes, string Status);
 public sealed record UpdateProjectOrganizationItemRequest(string? Title, string? Notes, string Status);
 public static class ProjectOrganizationRules
