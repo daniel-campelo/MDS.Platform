@@ -1060,6 +1060,14 @@ public partial class MainWindow : Window
         }
     }
 
+    private void GarmentColorQuickSelect_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string color }) return;
+        GarmentColorsInput.Text = color;
+        UpdateFrontGarmentPreview();
+        ProjectsStatusText.Text = $"Prévia alterada para a cor {color}. Clique em Salvar ficha técnica para manter esta cor no projeto.";
+    }
+
     private async Task RefreshGarmentBriefAsync()
     {
         if (currentProjectId is null) return;
