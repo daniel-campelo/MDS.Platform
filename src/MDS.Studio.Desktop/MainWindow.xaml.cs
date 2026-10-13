@@ -22,6 +22,7 @@ public partial class MainWindow : Window
     private Guid? currentProjectId;
     private Guid? preferredLibraryItemId;
     private LibraryItem[] projectVisualReferences = [];
+    private string frontArtworkScale = "Média";
     private const string SavedCoreCredentialName = "MDSStudio:CoreLogin";
 
     public MainWindow()
@@ -1047,7 +1048,7 @@ public partial class MainWindow : Window
 
         try
         {
-            var request = new UpdateProjectGarmentBriefRequest(GarmentTypeInput.Text.Trim(), GarmentModelInput.Text.Trim(), GarmentFabricInput.Text.Trim(), GarmentColorsInput.Text.Trim(), GarmentSizesInput.Text.Trim(), quantity, GarmentNotesInput.Text.Trim());
+            var request = new UpdateProjectGarmentBriefRequest(GarmentTypeInput.Text.Trim(), GarmentModelInput.Text.Trim(), GarmentFabricInput.Text.Trim(), GarmentColorsInput.Text.Trim(), frontArtworkScale, GarmentSizesInput.Text.Trim(), quantity, GarmentNotesInput.Text.Trim());
             var response = await studioClient.PutAsJsonAsync($"projects/{currentProjectId}/garment-brief", request);
             ProjectsStatusText.Text = response.IsSuccessStatusCode
                 ? "Ficha técnica da peça salva."
@@ -1068,6 +1069,14 @@ public partial class MainWindow : Window
         ProjectsStatusText.Text = $"Prévia alterada para a cor {color}. Clique em Salvar ficha técnica para manter esta cor no projeto.";
     }
 
+    private void FrontArtworkScale_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string scale }) return;
+        frontArtworkScale = scale;
+        UpdateFrontGarmentPreview();
+        ProjectsStatusText.Text = $"Prévia alterada para estampa {scale.ToLowerInvariant()}. Clique em Salvar ficha técnica para manter o tamanho no projeto.";
+    }
+
     private async Task RefreshGarmentBriefAsync()
     {
         if (currentProjectId is null) return;
@@ -1081,6 +1090,7 @@ public partial class MainWindow : Window
             GarmentModelInput.Text = brief.Model ?? string.Empty;
             GarmentFabricInput.Text = brief.Fabric ?? string.Empty;
             GarmentColorsInput.Text = brief.Colors ?? string.Empty;
+            frontArtworkScale = brief.FrontArtworkScale is "Pequena" or "Média" or "Grande" ? brief.FrontArtworkScale : "Média";
             GarmentSizesInput.Text = brief.SizeRange ?? string.Empty;
             GarmentQuantityInput.Text = brief.Quantity?.ToString() ?? string.Empty;
             GarmentNotesInput.Text = brief.Notes ?? string.Empty;
@@ -1316,6 +1326,12 @@ public partial class MainWindow : Window
         FrontGarmentArtworkImage.Source = null;
         FrontGarmentArtworkPlaceholder.Visibility = Visibility.Visible;
         FrontGarmentShape.Fill = ResolveGarmentColor(GarmentColorsInput.Text);
+        (FrontGarmentArtworkFrame.Width, FrontGarmentArtworkFrame.Height) = frontArtworkScale switch
+        {
+            "Pequena" => (94, 104),
+            "Grande" => (188, 210),
+            _ => (142, 158)
+        };
 
         if (FrontGarmentArtworkSelector.SelectedItem is not LibraryItem artwork)
         {
@@ -1333,7 +1349,7 @@ public partial class MainWindow : Window
             image.Freeze();
             FrontGarmentArtworkImage.Source = image;
             FrontGarmentArtworkPlaceholder.Visibility = Visibility.Collapsed;
-            FrontGarmentPreviewStatusText.Text = $"Prévia da frente usando “{artwork.OriginalName}”. A cor da peça segue o campo Cores da ficha técnica.";
+            FrontGarmentPreviewStatusText.Text = $"Prévia da frente usando “{artwork.OriginalName}”, em tamanho {frontArtworkScale.ToLowerInvariant()}. A cor da peça segue o campo Cores da ficha técnica.";
         }
         catch (Exception)
         {
@@ -1646,8 +1662,8 @@ public partial class MainWindow : Window
     private sealed record PatternTechnicalRevision(Guid RevisionId, string FilePath, string Version, DateTimeOffset RecordedAt);
     private sealed record StudioProject(Guid ProjectId, string Name, string LocalPath, string? Description, string Status, DateTimeOffset CreatedAt);
     private sealed record UpdateProjectRequest(string Name, string LocalPath, string? Description, string Status);
-    private sealed record UpdateProjectGarmentBriefRequest(string GarmentType, string Model, string Fabric, string Colors, string SizeRange, int? Quantity, string Notes);
-    private sealed record ProjectGarmentBrief(string? GarmentType, string? Model, string? Fabric, string? Colors, string? SizeRange, int? Quantity, string? Notes);
+    private sealed record UpdateProjectGarmentBriefRequest(string GarmentType, string Model, string Fabric, string Colors, string FrontArtworkScale, string SizeRange, int? Quantity, string Notes);
+    private sealed record ProjectGarmentBrief(string? GarmentType, string? Model, string? Fabric, string? Colors, string? FrontArtworkScale, string? SizeRange, int? Quantity, string? Notes);
     private sealed record CreateProjectOrganizationItemRequest(string Title, string? Notes, string Status);
     private sealed record ProjectOrganizationItem(Guid ItemId, string Title, string? Notes, string Status, DateTimeOffset CreatedAt);
     private sealed record UpdateProjectOrganizationItemRequest(string Title, string? Notes, string Status);

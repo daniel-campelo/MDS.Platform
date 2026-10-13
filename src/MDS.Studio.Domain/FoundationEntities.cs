@@ -33,6 +33,7 @@ public sealed class ProjectGarmentBrief
     public string? Model { get; set; }
     public string? Fabric { get; set; }
     public string? Colors { get; set; }
+    public string? FrontArtworkScale { get; set; }
     public string? SizeRange { get; set; }
     public int? Quantity { get; set; }
     public string? Notes { get; set; }
