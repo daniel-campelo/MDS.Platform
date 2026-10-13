@@ -578,7 +578,9 @@ public partial class MainWindow : Window
             var allPatterns = await response.Content.ReadFromJsonAsync<StudioPattern[]>() ?? [];
             var selectedProjectId = (PatternFilterProjectSelector.SelectedItem as StudioProject)?.ProjectId;
             var selectedStatus = SelectedContent(PatternFilterStatusInput, "Todas");
+            var searchTerm = PatternSearchInput.Text.Trim();
             var patterns = allPatterns
+                .Where(pattern => string.IsNullOrWhiteSpace(searchTerm) || pattern.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
                 .Where(pattern => selectedProjectId is null || pattern.ProjectId == selectedProjectId)
                 .Where(pattern => selectedStatus == "Todas" || pattern.Status == selectedStatus)
                 .ToArray();
