@@ -1340,14 +1340,27 @@ public partial class MainWindow : Window
         HomeProjectCardsPanel.Children.Clear();
         try
         {
-            var response = await studioClient.GetAsync("projects");
+            var projectsTask = studioClient.GetAsync("projects");
+            var patternsTask = studioClient.GetAsync("patterns");
+            await Task.WhenAll(projectsTask, patternsTask);
+            var response = await projectsTask;
+            var patternsResponse = await patternsTask;
             if (!response.IsSuccessStatusCode)
             {
                 HomeProjectsStatusText.Text = "Projetos indisponíveis no momento.";
+                HomeAttentionText.Text = "Não foi possível carregar os itens que precisam de acompanhamento.";
                 return;
             }
 
             var projects = await response.Content.ReadFromJsonAsync<StudioProject[]>() ?? [];
+            var patterns = patternsResponse.IsSuccessStatusCode
+                ? await patternsResponse.Content.ReadFromJsonAsync<StudioPattern[]>() ?? []
+                : [];
+            var waitingProjects = projects.Count(project => string.Equals(project.Status, "Em espera", StringComparison.OrdinalIgnoreCase));
+            var reviewingPatterns = patterns.Count(pattern => string.Equals(pattern.Status, "Em revisão", StringComparison.OrdinalIgnoreCase));
+            HomeAttentionText.Text = waitingProjects == 0 && reviewingPatterns == 0
+                ? "Nenhum projeto em espera ou molde em revisão no momento."
+                : $"Projetos em espera: {waitingProjects} · Moldes em revisão: {reviewingPatterns}";
             foreach (var project in projects.Take(6))
             {
                 var content = new StackPanel();
@@ -1378,6 +1391,7 @@ public partial class MainWindow : Window
         catch (HttpRequestException)
         {
             HomeProjectsStatusText.Text = "Projetos indisponíveis no momento.";
+            HomeAttentionText.Text = "Não foi possível carregar os itens que precisam de acompanhamento.";
         }
     }
 
