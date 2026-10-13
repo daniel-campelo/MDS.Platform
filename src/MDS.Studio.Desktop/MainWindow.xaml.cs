@@ -297,6 +297,16 @@ public partial class MainWindow : Window
 
     private async void RefreshProjects_Click(object sender, RoutedEventArgs e) => await RefreshProjectsAsync();
 
+    private async void BackToProjects_Click(object sender, RoutedEventArgs e)
+    {
+        ProjectsPanel.Visibility = Visibility.Visible;
+        ProjectDetailsPanel.Visibility = Visibility.Collapsed;
+        currentProjectId = null;
+        ProjectSearchInput.Clear();
+        ProjectFilterStatusInput.SelectedIndex = 0;
+        await RefreshProjectsAsync();
+    }
+
     private async void OpenWaitingProjects_Click(object sender, RoutedEventArgs e)
     {
         if (string.IsNullOrWhiteSpace(sessionToken)) return;
