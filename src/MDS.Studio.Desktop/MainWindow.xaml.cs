@@ -297,6 +297,22 @@ public partial class MainWindow : Window
 
     private async void RefreshProjects_Click(object sender, RoutedEventArgs e) => await RefreshProjectsAsync();
 
+    private async void OpenWaitingProjects_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(sessionToken)) return;
+        HomePanel.Visibility = Visibility.Collapsed;
+        DiagnosticsPanel.Visibility = Visibility.Collapsed;
+        SettingsPanel.Visibility = Visibility.Collapsed;
+        LibraryPanel.Visibility = Visibility.Collapsed;
+        PatternsPanel.Visibility = Visibility.Collapsed;
+        ProjectsPanel.Visibility = Visibility.Visible;
+        ProjectDetailsPanel.Visibility = Visibility.Collapsed;
+        currentProjectId = null;
+        ProjectSearchInput.Clear();
+        ProjectFilterStatusInput.SelectedIndex = 2;
+        await RefreshProjectsAsync();
+    }
+
     private async void Library_Click(object sender, RoutedEventArgs e)
     {
         if (string.IsNullOrWhiteSpace(sessionToken))
@@ -359,6 +375,22 @@ public partial class MainWindow : Window
     }
 
     private async void RefreshPatterns_Click(object sender, RoutedEventArgs e) => await RefreshPatternsAsync();
+
+    private async void OpenReviewPatterns_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(sessionToken)) return;
+        HomePanel.Visibility = Visibility.Collapsed;
+        DiagnosticsPanel.Visibility = Visibility.Collapsed;
+        SettingsPanel.Visibility = Visibility.Collapsed;
+        ProjectsPanel.Visibility = Visibility.Collapsed;
+        ProjectDetailsPanel.Visibility = Visibility.Collapsed;
+        LibraryPanel.Visibility = Visibility.Collapsed;
+        PatternsPanel.Visibility = Visibility.Visible;
+        await RefreshPatternProjectsAsync();
+        PatternFilterProjectSelector.SelectedItem = null;
+        PatternFilterStatusInput.SelectedIndex = 2;
+        await RefreshPatternsAsync();
+    }
 
     private async void OpenProjectPatterns_Click(object sender, RoutedEventArgs e)
     {
