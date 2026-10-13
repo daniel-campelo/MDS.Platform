@@ -21,6 +21,7 @@ public partial class MainWindow : Window
     private string? currentUsername;
     private Guid? currentProjectId;
     private Guid? preferredLibraryItemId;
+    private LibraryItem[] projectVisualReferences = [];
     private const string SavedCoreCredentialName = "MDSStudio:CoreLogin";
 
     public MainWindow()
@@ -1051,6 +1052,7 @@ public partial class MainWindow : Window
             ProjectsStatusText.Text = response.IsSuccessStatusCode
                 ? "Ficha técnica da peça salva."
                 : $"Não foi possível salvar a ficha técnica (resposta {(int)response.StatusCode}).";
+            if (response.IsSuccessStatusCode) UpdateFrontGarmentPreview();
         }
         catch (HttpRequestException)
         {
@@ -1217,6 +1219,7 @@ public partial class MainWindow : Window
         if (currentProjectId is null) return;
         ProjectVisualReferencesPanel.Children.Clear();
         ProjectVisualReferencesStatusText.Text = string.Empty;
+        projectVisualReferences = [];
 
         try
         {
@@ -1232,6 +1235,8 @@ public partial class MainWindow : Window
                 .Where(item => string.Equals(item.ContentType, "Imagem", StringComparison.OrdinalIgnoreCase))
                 .Where(item => item.ProjectId == currentProjectId || item.LocalPath.StartsWith(projectPath, StringComparison.OrdinalIgnoreCase))
                 .ToArray();
+            projectVisualReferences = visualReferences.Where(reference => File.Exists(reference.LocalPath)).ToArray();
+            RefreshFrontGarmentArtworkOptions();
 
             var shown = 0;
             foreach (var reference in visualReferences)
@@ -1281,8 +1286,63 @@ public partial class MainWindow : Window
         }
         catch (HttpRequestException)
         {
+            RefreshFrontGarmentArtworkOptions();
             ProjectVisualReferencesStatusText.Text = "Não foi possível alcançar a API do Studio para carregar as referências visuais.";
         }
+    }
+
+    private void RefreshFrontGarmentArtworkOptions()
+    {
+        var selectedId = (FrontGarmentArtworkSelector.SelectedItem as LibraryItem)?.AssetId;
+        FrontGarmentArtworkSelector.ItemsSource = projectVisualReferences;
+        FrontGarmentArtworkSelector.SelectedItem = projectVisualReferences.FirstOrDefault(reference => reference.AssetId == selectedId)
+            ?? projectVisualReferences.FirstOrDefault();
+        UpdateFrontGarmentPreview();
+    }
+
+    private void FrontGarmentArtworkSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        => UpdateFrontGarmentPreview();
+
+    private void UpdateFrontGarmentPreview()
+    {
+        FrontGarmentArtworkImage.Source = null;
+        FrontGarmentArtworkPlaceholder.Visibility = Visibility.Visible;
+        FrontGarmentShape.Fill = ResolveGarmentColor(GarmentColorsInput.Text);
+
+        if (FrontGarmentArtworkSelector.SelectedItem is not LibraryItem artwork)
+        {
+            FrontGarmentPreviewStatusText.Text = "Escolha ou vincule uma imagem na Biblioteca para colocá-la na prévia da frente.";
+            return;
+        }
+
+        try
+        {
+            var image = new BitmapImage();
+            image.BeginInit();
+            image.CacheOption = BitmapCacheOption.OnLoad;
+            image.UriSource = new Uri(artwork.LocalPath, UriKind.Absolute);
+            image.EndInit();
+            image.Freeze();
+            FrontGarmentArtworkImage.Source = image;
+            FrontGarmentArtworkPlaceholder.Visibility = Visibility.Collapsed;
+            FrontGarmentPreviewStatusText.Text = $"Prévia da frente usando “{artwork.OriginalName}”. A cor da peça segue o campo Cores da ficha técnica.";
+        }
+        catch (Exception)
+        {
+            FrontGarmentPreviewStatusText.Text = "Não foi possível carregar a imagem selecionada na prévia.";
+        }
+    }
+
+    private static Brush ResolveGarmentColor(string colors)
+    {
+        var value = colors.ToLowerInvariant();
+        if (value.Contains("preta") || value.Contains("preto")) return new SolidColorBrush(Color.FromRgb(31, 41, 55));
+        if (value.Contains("azul")) return new SolidColorBrush(Color.FromRgb(37, 99, 235));
+        if (value.Contains("vermelh")) return new SolidColorBrush(Color.FromRgb(220, 38, 38));
+        if (value.Contains("verde")) return new SolidColorBrush(Color.FromRgb(22, 163, 74));
+        if (value.Contains("amarel")) return new SolidColorBrush(Color.FromRgb(250, 204, 21));
+        if (value.Contains("cinza")) return new SolidColorBrush(Color.FromRgb(148, 163, 184));
+        return Brushes.White;
     }
 
     private void ShowVisualReference(string title, BitmapImage image)
