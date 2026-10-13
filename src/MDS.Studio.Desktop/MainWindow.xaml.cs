@@ -716,11 +716,41 @@ public partial class MainWindow : Window
         LibraryTypeInput.SelectedIndex = 1;
     }
 
+    private void ChooseNewLibraryFile_Click(object sender, RoutedEventArgs e)
+    {
+        if (TryChooseLibraryFile(out var path)) LibraryPathInput.Text = path;
+    }
+
     private void ChooseExistingLibraryImage_Click(object sender, RoutedEventArgs e)
     {
         if (!TryChooseImage(out var path)) return;
         LibraryExistingPathInput.Text = path;
         LibraryExistingTypeInput.SelectedIndex = 1;
+    }
+
+    private void ChooseExistingLibraryFile_Click(object sender, RoutedEventArgs e)
+    {
+        if (TryChooseLibraryFile(out var path)) LibraryExistingPathInput.Text = path;
+    }
+
+    private static bool TryChooseLibraryFile(out string path)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = "Escolher arquivo de referência",
+            Filter = "Todos os arquivos|*.*",
+            CheckFileExists = true,
+            Multiselect = false
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            path = dialog.FileName;
+            return true;
+        }
+
+        path = string.Empty;
+        return false;
     }
 
     private static bool TryChooseImage(out string path)
