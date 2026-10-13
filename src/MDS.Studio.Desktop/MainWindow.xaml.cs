@@ -782,7 +782,9 @@ public partial class MainWindow : Window
             var allItems = await response.Content.ReadFromJsonAsync<LibraryItem[]>() ?? [];
             var selectedProjectId = (LibraryFilterProjectSelector.SelectedItem as StudioProject)?.ProjectId;
             var selectedType = SelectedContent(LibraryFilterTypeInput, "Todos");
+            var searchTerm = LibrarySearchInput.Text.Trim();
             var items = allItems
+                .Where(item => string.IsNullOrWhiteSpace(searchTerm) || item.OriginalName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
                 .Where(item => selectedProjectId is null || item.ProjectId == selectedProjectId)
                 .Where(item => selectedType == "Todos" || item.ContentType == selectedType)
                 .ToArray();
