@@ -19,12 +19,13 @@
    <StackPanel x:Name="HomePanel"><Border Background="#FFF4CE" Padding="12"><TextBlock Text="🧪 MDS STUDIO — HOMOLOGAÇÃO" FontWeight="Bold"/></Border>
    <TextBlock Text="Bem-vindo ao MDS Studio" FontSize="28" Margin="0,28,0,4"/><TextBlock Text="Use a sua conta já existente do MDS Core." Foreground="Gray"/>
    <Border x:Name="LoginPanel" BorderBrush="#D7DBDD" BorderThickness="1" CornerRadius="6" Padding="20" Margin="0,28,0,0">
-    <StackPanel><TextBlock Text="Entrar com MDS Core" FontSize="20" FontWeight="SemiBold"/><TextBlock Text="A senha é enviada somente ao MDS Core e não é salva pelo Studio." Foreground="Gray" Margin="0,6,0,18"/>
+    <StackPanel><TextBlock Text="Entrar com MDS Core" FontSize="20" FontWeight="SemiBold"/><TextBlock Text="Se você escolher lembrar o acesso, a senha será protegida pelo Gerenciador de Credenciais do Windows deste computador." Foreground="Gray" Margin="0,6,0,18" TextWrapping="Wrap"/>
      <TextBlock Text="Endereço do MDS Core"/><TextBox x:Name="CoreUrlInput" Text="http://192.168.7.14:8081/api" Margin="0,5,0,14" Padding="8"/>
      <TextBlock Text="Endereço da API do Studio"/><TextBox x:Name="StudioUrlInput" Text="http://localhost:5000" Margin="0,5,0,14" Padding="8"/>
      <TextBlock Text="Usuário"/><TextBox x:Name="UsernameInput" Margin="0,5,0,14" Padding="8"/>
-     <TextBlock Text="Senha"/><PasswordBox x:Name="PasswordInput" Margin="0,5,0,18" Padding="8"/>
-     <Button x:Name="SignInButton" Content="Entrar" Width="112" HorizontalAlignment="Left" Padding="14,7" Click="SignIn_Click"/>
+     <TextBlock Text="Senha"/><PasswordBox x:Name="PasswordInput" Margin="0,5,0,10" Padding="8"/>
+     <CheckBox x:Name="RememberCredentialsCheckBox" Content="Lembrar acesso neste computador" Margin="0,0,0,18"/>
+     <StackPanel Orientation="Horizontal"><Button x:Name="SignInButton" Content="Entrar" Width="112" HorizontalAlignment="Left" Padding="14,7" Click="SignIn_Click"/><Button Content="Esquecer acesso salvo" Margin="12,0,0,0" Padding="14,7" Background="#E2E8F0" Foreground="#334155" BorderBrush="#CBD5E1" Click="ForgetSavedCredentials_Click"/></StackPanel>
     </StackPanel>
    </Border>
    <Border x:Name="SessionPanel" Visibility="Collapsed" Background="White" BorderBrush="#BFDBFE" BorderThickness="1" CornerRadius="8" Padding="22" Margin="0,28,0,0">

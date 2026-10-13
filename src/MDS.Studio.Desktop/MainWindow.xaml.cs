@@ -3,6 +3,8 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -19,8 +21,13 @@ public partial class MainWindow : Window
     private string? currentUsername;
     private Guid? currentProjectId;
     private Guid? preferredLibraryItemId;
+    private const string SavedCoreCredentialName = "MDSStudio:CoreLogin";
 
-    public MainWindow() => InitializeComponent();
+    public MainWindow()
+    {
+        InitializeComponent();
+        LoadSavedCredentials();
+    }
 
     private async void SignIn_Click(object sender, RoutedEventArgs e)
     {
@@ -50,6 +57,10 @@ public partial class MainWindow : Window
 
             sessionToken = login.Token;
             currentUsername = login.User.Username;
+            if (RememberCredentialsCheckBox.IsChecked == true)
+                SaveCredentials(UsernameInput.Text.Trim(), PasswordInput.Password);
+            else
+                DeleteSavedCredentials();
             PasswordInput.Clear();
             UserNameText.Text = $"{login.User.Username} — conectado pelo MDS Core";
             RoleText.Text = login.User.Roles?.Length > 0 ? $"Perfil: {string.Join(", ", login.User.Roles)}" : "Perfil não informado.";
@@ -99,6 +110,60 @@ public partial class MainWindow : Window
             StatusText.Text = "Sessão encerrada.";
         }
     }
+
+    private void ForgetSavedCredentials_Click(object sender, RoutedEventArgs e)
+    {
+        DeleteSavedCredentials();
+        UsernameInput.Clear();
+        PasswordInput.Clear();
+        RememberCredentialsCheckBox.IsChecked = false;
+        StatusText.Text = "O acesso salvo foi removido deste computador.";
+    }
+
+    private void LoadSavedCredentials()
+    {
+        if (!CredRead(SavedCoreCredentialName, CredentialTypeGeneric, 0, out var credentialPointer)) return;
+        try
+        {
+            var credential = Marshal.PtrToStructure<NativeCredential>(credentialPointer);
+            UsernameInput.Text = credential.UserName ?? string.Empty;
+            PasswordInput.Password = credential.CredentialBlobSize == 0
+                ? string.Empty
+                : Marshal.PtrToStringUni(credential.CredentialBlob, (int)credential.CredentialBlobSize / sizeof(char)) ?? string.Empty;
+            RememberCredentialsCheckBox.IsChecked = true;
+        }
+        finally
+        {
+            CredFree(credentialPointer);
+        }
+    }
+
+    private static void SaveCredentials(string username, string password)
+    {
+        var passwordBytes = Encoding.Unicode.GetBytes(password);
+        var passwordPointer = Marshal.AllocCoTaskMem(passwordBytes.Length);
+        try
+        {
+            Marshal.Copy(passwordBytes, 0, passwordPointer, passwordBytes.Length);
+            var credential = new NativeCredential
+            {
+                Type = CredentialTypeGeneric,
+                TargetName = SavedCoreCredentialName,
+                CredentialBlobSize = (uint)passwordBytes.Length,
+                CredentialBlob = passwordPointer,
+                Persist = CredentialPersistLocalMachine,
+                UserName = username
+            };
+
+            CredWrite(ref credential, 0);
+        }
+        finally
+        {
+            Marshal.FreeCoTaskMem(passwordPointer);
+        }
+    }
+
+    private static void DeleteSavedCredentials() => CredDelete(SavedCoreCredentialName, CredentialTypeGeneric, 0);
 
     private bool TryConfigureCoreClient()
     {
@@ -1321,6 +1386,41 @@ public partial class MainWindow : Window
         SignInButton.IsEnabled = !busy;
         SignInButton.Content = busy ? "Entrando..." : "Entrar";
     }
+
+    private const uint CredentialTypeGeneric = 1;
+    private const uint CredentialPersistLocalMachine = 2;
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct NativeCredential
+    {
+        public uint Flags;
+        public uint Type;
+        public string TargetName;
+        public string Comment;
+        public System.Runtime.InteropServices.ComTypes.FILETIME LastWritten;
+        public uint CredentialBlobSize;
+        public IntPtr CredentialBlob;
+        public uint Persist;
+        public uint AttributeCount;
+        public IntPtr Attributes;
+        public string TargetAlias;
+        public string UserName;
+    }
+
+    [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool CredRead(string target, uint type, int reservedFlag, out IntPtr credentialPointer);
+
+    [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool CredWrite(ref NativeCredential credential, uint flags);
+
+    [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool CredDelete(string target, uint type, int flags);
+
+    [DllImport("advapi32.dll", SetLastError = true)]
+    private static extern void CredFree(IntPtr credentialPointer);
 
     private sealed record LoginRequest(string Username, string Password);
     private sealed record LoginResponse(string? Token, CoreUser? User);
