@@ -211,6 +211,7 @@ app.MapGet("/projects/{projectId:guid}/garment-brief", async (Guid projectId, St
         fabric = brief?.Fabric,
         colors = brief?.Colors,
         frontArtworkScale = brief?.FrontArtworkScale,
+        frontArtworkPosition = brief?.FrontArtworkPosition,
         sizeRange = brief?.SizeRange,
         quantity = brief?.Quantity,
         notes = brief?.Notes,
@@ -220,14 +221,14 @@ app.MapGet("/projects/{projectId:guid}/garment-brief", async (Guid projectId, St
 app.MapPut("/projects/{projectId:guid}/garment-brief", async (Guid projectId, UpdateProjectGarmentBriefRequest request, StudioDbContext db, CancellationToken ct) =>
 {
     if (!await db.Projects.AnyAsync(x => x.Id == projectId, ct)) return Results.NotFound(new { code = "MDS-STUDIO-PROJECT-001", message = "Project not found." });
-    var garmentType = request.GarmentType?.Trim(); var model = request.Model?.Trim(); var fabric = request.Fabric?.Trim(); var colors = request.Colors?.Trim(); var frontArtworkScale = request.FrontArtworkScale?.Trim(); var sizeRange = request.SizeRange?.Trim(); var notes = request.Notes?.Trim();
-    if (garmentType?.Length > 100 || model?.Length > 160 || fabric?.Length > 160 || colors?.Length > 300 || frontArtworkScale?.Length > 20 || (frontArtworkScale is not null && frontArtworkScale is not "Pequena" and not "Média" and not "Grande") || sizeRange?.Length > 160 || notes?.Length > 2000 || request.Quantity is < 0 or > 100000)
+    var garmentType = request.GarmentType?.Trim(); var model = request.Model?.Trim(); var fabric = request.Fabric?.Trim(); var colors = request.Colors?.Trim(); var frontArtworkScale = request.FrontArtworkScale?.Trim(); var frontArtworkPosition = request.FrontArtworkPosition?.Trim(); var sizeRange = request.SizeRange?.Trim(); var notes = request.Notes?.Trim();
+    if (garmentType?.Length > 100 || model?.Length > 160 || fabric?.Length > 160 || colors?.Length > 300 || frontArtworkScale?.Length > 20 || (frontArtworkScale is not null && frontArtworkScale is not "Pequena" and not "Média" and not "Grande") || frontArtworkPosition?.Length > 30 || (frontArtworkPosition is not null && frontArtworkPosition is not "Central" and not "Peito esquerdo" and not "Peito direito") || sizeRange?.Length > 160 || notes?.Length > 2000 || request.Quantity is < 0 or > 100000)
         return Results.BadRequest(new { code = "MDS-STUDIO-PROJECT-003", message = "Garment brief is invalid." });
     var brief = await db.ProjectGarmentBriefs.FindAsync([projectId], ct);
     if (brief is null) { brief = new ProjectGarmentBrief { ProjectId = projectId }; db.ProjectGarmentBriefs.Add(brief); }
-    brief.GarmentType = garmentType; brief.Model = model; brief.Fabric = fabric; brief.Colors = colors; brief.FrontArtworkScale = frontArtworkScale; brief.SizeRange = sizeRange; brief.Quantity = request.Quantity; brief.Notes = notes; brief.UpdatedAt = DateTimeOffset.UtcNow;
+    brief.GarmentType = garmentType; brief.Model = model; brief.Fabric = fabric; brief.Colors = colors; brief.FrontArtworkScale = frontArtworkScale; brief.FrontArtworkPosition = frontArtworkPosition; brief.SizeRange = sizeRange; brief.Quantity = request.Quantity; brief.Notes = notes; brief.UpdatedAt = DateTimeOffset.UtcNow;
     await db.SaveChangesAsync(ct);
-    return Results.Ok(new { projectId, brief.GarmentType, brief.Model, brief.Fabric, brief.Colors, brief.FrontArtworkScale, brief.SizeRange, brief.Quantity, brief.Notes, brief.UpdatedAt });
+    return Results.Ok(new { projectId, brief.GarmentType, brief.Model, brief.Fabric, brief.Colors, brief.FrontArtworkScale, brief.FrontArtworkPosition, brief.SizeRange, brief.Quantity, brief.Notes, brief.UpdatedAt });
 }).RequireAuthorization(Permissions.StudioAccess);
 app.MapGet("/projects/{projectId:guid}/organization", async (Guid projectId, StudioDbContext db, CancellationToken ct) =>
 {
@@ -338,7 +339,7 @@ public sealed record UpdateLibraryItemRequest(string? Name, string? Type, string
 public sealed record CreatePatternRequest(Guid ProjectId, string? Name, string? Notes, string Status);
 public sealed record UpdatePatternRequest(Guid ProjectId, string? Name, string? Notes, string? TechnicalFilePath, string? TechnicalVersion, string Status);
 public sealed record UpdateProjectRequest(string? Name, string? LocalPath, string? Description, string Status);
-public sealed record UpdateProjectGarmentBriefRequest(string? GarmentType, string? Model, string? Fabric, string? Colors, string? FrontArtworkScale, string? SizeRange, int? Quantity, string? Notes);
+public sealed record UpdateProjectGarmentBriefRequest(string? GarmentType, string? Model, string? Fabric, string? Colors, string? FrontArtworkScale, string? FrontArtworkPosition, string? SizeRange, int? Quantity, string? Notes);
 public sealed record CreateProjectOrganizationItemRequest(string? Title, string? Notes, string Status);
 public sealed record UpdateProjectOrganizationItemRequest(string? Title, string? Notes, string Status);
 public static class ProjectOrganizationRules
